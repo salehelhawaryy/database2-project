@@ -4,7 +4,7 @@ import java.io.Serializable;
 
 public class Page implements java.io.Serializable {
 	int maximumRows;
-	Vector<Vector<Hashtable<Object,Object>>> tuples;
+	Vector<Hashtable<String,Object>> tuples;
 	public Page(int maximumRows) {
 		this.maximumRows=maximumRows;
 	}
