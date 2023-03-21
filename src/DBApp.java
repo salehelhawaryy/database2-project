@@ -10,10 +10,8 @@ public class DBApp {
 		Table table =new Table(tableName,clusteringKey,ColNameType,ColNameMin,ColNameMax);
 		tables.add(table);
 	}
-	
-	
-	
+
 	public static void main(String[] args) {
-		
+//		System.out.println("test");
 	}
 }
