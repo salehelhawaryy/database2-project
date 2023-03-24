@@ -11,6 +11,7 @@ public class Table {
 
    public Table(String name,String PK,Hashtable<String, String> colNameType,Hashtable<String,String> colNameMin,Hashtable<String,String> colNameMax)
    {
+	   rows = new Vector<Page>();
 	   this.name=name;
 	   this.PK=PK;
 	   this.colNameType=colNameType;

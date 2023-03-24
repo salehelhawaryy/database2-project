@@ -6,6 +6,7 @@ public class Page implements java.io.Serializable {
 	int maximumRows;
 	Vector<Hashtable<String,Object>> tuples;
 	public Page(int maximumRows) {
+		tuples = new Vector<Hashtable<String, Object>>();
 		this.maximumRows=maximumRows;
 	}
 
