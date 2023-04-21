@@ -4,6 +4,10 @@ import java.io.IOException;
 import java.util.Hashtable;
 import java.util.Properties;
 import java.util.Vector;
+import java.io.FileOutputStream;
+import java.io.ObjectOutputStream;
+import java.io.ObjectInputStream;
+
 
 public class DBApp {
 	Vector<Table> tables;
@@ -24,6 +28,34 @@ public class DBApp {
 	{
 		Table table =new Table(tableName,clusteringKey,ColNameType,ColNameMin,ColNameMax);
 		tables.add(table);
+	}
+
+	public void serialize(Page p) {
+		try {
+			FileOutputStream fileOutputStream = new FileOutputStream("vector.ser");
+			ObjectOutputStream objectOutputStream = new ObjectOutputStream(fileOutputStream);
+			objectOutputStream.writeObject(p);
+			objectOutputStream.close();
+			fileOutputStream.close();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+
+	public Page deserialize(){
+		Page p = null;
+		try {
+			FileInputStream fileInputStream = new FileInputStream("vector.ser");
+			ObjectInputStream objectInputStream = new ObjectInputStream(fileInputStream);
+			p = (Page) objectInputStream.readObject();
+			objectInputStream.close();
+			fileInputStream.close();
+		} catch (IOException e) {
+			e.printStackTrace();
+		} catch (ClassNotFoundException e) {
+			e.printStackTrace();
+		}
+		return p;
 	}
 
 	public void insertIntoTable(String strTableName,
@@ -47,7 +79,20 @@ public class DBApp {
 		if(table.rows.isEmpty()) {
 			Page page = new Page(Integer.parseInt(MaximumRowsCountinTablePage));
 			table.rows.add(page);
+
 		}
+
+//		try {
+//			FileOutputStream fileOutputStream = new FileOutputStream("vector.ser");
+//			ObjectOutputStream objectOutputStream = new ObjectOutputStream(fileOutputStream);
+//			objectOutputStream.writeObject(//name of vector);
+//			objectOutputStream.close();
+//			fileOutputStream.close();
+//			System.out.println("Vector serialized successfully!");
+//		} catch (IOException e) {
+//			e.printStackTrace();
+//		}
+
 
 		String pk = table.getPK();
 		boolean test = false;
@@ -129,6 +174,60 @@ public class DBApp {
 		}
 	}
 
+	public void updateTable(String strTableName,
+							String strClusteringKeyValue,
+							Hashtable<String,Object> htblColNameValue )
+			throws DBAppException {
+		Table table = null;
+		Boolean found = false;
+		for(int i = 0; i< tables.size(); i++) {
+
+			if(tables.get(i).getName().equals(strTableName)) {
+				found = true;
+				table = tables.get(i);
+				break;
+			}
+		}
+		if(!found) {
+			throw new DBAppException();
+		}
+
+
+		String pk = table.getPK();
+		boolean done = false;
+
+		for(int i = 0; i < table.rows.size();i++) { //make sure that we use binary search on content of pages not on pages themselves
+			Page p = table.rows.get(i);
+			int first1 = 0;
+			int last1 = p.tuples.size()-1;
+			int mid1 = (first1 + last1)/2;
+			while(first1 <= last1) {
+				Hashtable<String,Object> tuple = p.tuples.get(mid1);
+				Object val = tuple.get(pk); // tuple elly fy el table
+				if(val.toString().compareTo(strClusteringKeyValue) < 0) {
+					first1 = mid1 + 1;
+				}
+				else if(val.toString().compareTo(strClusteringKeyValue) == 0) {
+					int finalMid = mid1;
+					p.tuples.get(mid1).forEach((k, v) ->{
+						htblColNameValue.forEach((k2, v2) ->{
+							if(k.compareTo(k2) == 0) {
+								p.tuples.get(finalMid).replace(k, v2);
+							}
+						});
+					});
+					done = true;
+					break;
+				}
+				else {
+					last1 = mid1 - 1;
+				}
+				mid1 = (first1 + last1)/2;
+			}
+			if(done) break;
+		}
+	}
+
 
 	public static void main(String[] args) throws IOException, DBAppException {
 		String strTableName = "Student";
@@ -170,18 +269,23 @@ public class DBApp {
 		htblColNameValue5.put("gpa", new Double( 0.95 ) );
 		dbApp.insertIntoTable( strTableName , htblColNameValue5 );
 //
+		Hashtable update = new Hashtable( );
+		update.put("name", new String("test update 2 col was mohamed" ) );
+		update.put("gpa", new Double(2.0) );
+		dbApp.updateTable(strTableName, "2343431", update);
+
 //		Hashtable htblColNameValue4 = new Hashtable( );
 //		htblColNameValue4.put("id", new Integer( 2343433 ));
 //		htblColNameValue4.put("name", new String("zoz" ) );
 //		htblColNameValue4.put("gpa", new Double( 0.95 ) );
 //		dbApp.insertIntoTable( strTableName , htblColNameValue4 );
-
+		
 		Table t = dbApp.tables.get(0);
 		for(int i = 0;i < t.rows.size();i++) {
 			Page p = t.rows.get(i);
 			for(int j = 0;j<p.tuples.size();j++) {
 				Hashtable<String,Object> h = p.tuples.get(j);
-				System.out.println(h );
+				System.out.println(h);
 			}
 			System.out.println();
 		}
