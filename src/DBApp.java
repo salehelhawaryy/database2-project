@@ -30,9 +30,9 @@ public class DBApp {
 		tables.add(table);
 	}
 
-	public void serialize(Page p) {
+	public void serialize(Page p, String fileName) {
 		try {
-			FileOutputStream fileOutputStream = new FileOutputStream("vector.ser");
+			FileOutputStream fileOutputStream = new FileOutputStream(fileName);
 			ObjectOutputStream objectOutputStream = new ObjectOutputStream(fileOutputStream);
 			objectOutputStream.writeObject(p);
 			objectOutputStream.close();
@@ -42,10 +42,10 @@ public class DBApp {
 		}
 	}
 
-	public Page deserialize(){
+	public Page deserialize(String fileName){
 		Page p = null;
 		try {
-			FileInputStream fileInputStream = new FileInputStream("vector.ser");
+			FileInputStream fileInputStream = new FileInputStream(fileName);
 			ObjectInputStream objectInputStream = new ObjectInputStream(fileInputStream);
 			p = (Page) objectInputStream.readObject();
 			objectInputStream.close();
@@ -79,43 +79,58 @@ public class DBApp {
 		if(table.rows.isEmpty()) {
 			Page page = new Page(Integer.parseInt(MaximumRowsCountinTablePage));
 			table.rows.add(page);
-
+			page.tuples.add(htblColNameValue);
+			String fileName = strTableName + "page" + 0 + ".ser";
+			serialize(page, fileName);
+			return;
 		}
 
-//		try {
-//			FileOutputStream fileOutputStream = new FileOutputStream("vector.ser");
-//			ObjectOutputStream objectOutputStream = new ObjectOutputStream(fileOutputStream);
-//			objectOutputStream.writeObject(//name of vector);
-//			objectOutputStream.close();
-//			fileOutputStream.close();
-//			System.out.println("Vector serialized successfully!");
-//		} catch (IOException e) {
-//			e.printStackTrace();
-//		}
 
 
 		String pk = table.getPK();
 		boolean test = false;
 
 		//for the case that the insertion is the largest in the table
-		int totalPages = table.rows.size();
-		Hashtable<Integer,Integer > eachPageSizeBefore = new Hashtable<Integer, Integer>();
-		for(int x = 0; x < table.rows.size(); x++) {
-			eachPageSizeBefore.put(x, table.rows.get(x).tuples.size());
+		int maxPage = table.rows.size()-1;
+		Page max = deserialize(strTableName+"page"+maxPage+".ser");
+		Hashtable<String,Object> maxTuple = max.tuples.get(max.tuples.size()-1);
+		if(maxTuple.get(pk).toString().compareTo(htblColNameValue.get(pk).toString()) < 0) {
+			if(max.tuples.size() == Integer.parseInt(MaximumRowsCountinTablePage)) {
+				Page page = new Page(Integer.parseInt(MaximumRowsCountinTablePage));
+				page.tuples.add(htblColNameValue);
+				table.rows.add(page);
+				int num = maxPage + 1;
+				serialize(page, strTableName+"page"+num+".ser");
+				return;
+			}
+			else {
+				max.tuples.add(htblColNameValue);
+				serialize(max, strTableName+"page"+maxPage+".ser");
+				return;
+			}
 		}
 
+//		int totalPages = table.rows.size();
+//		Hashtable<Integer,Integer > eachPageSizeBefore = new Hashtable<Integer, Integer>();
+//		for(int x = 0; x < table.rows.size(); x++) {
+//			eachPageSizeBefore.put(x, table.rows.get(x).tuples.size());
+//		}
 
-		for(Page p : table.rows ) {
-//		for(int j = 0;j<table.rows.size();j++ ) {
+
+//		for(Page p : table.rows ) {
+//			p=deserialize();
+		for(int j = 0;j<table.rows.size();j++ ) {
+			Page p = deserialize(strTableName + "page" + j + ".ser");
 //			Page p = table.rows.get(j);
 			int count = 0;
-			if(p.tuples.isEmpty()) {
-				p.tuples.insertElementAt(htblColNameValue, 0);
-			}
+//			if(p.tuples.isEmpty()) {
+//				p.tuples.insertElementAt(htblColNameValue, 0);
+//			}
 			for(int i = 0;i < p.tuples.size();i++) {
 				Hashtable<String,Object> tuple = p.tuples.get(i);
 				if(tuple.get(pk).toString().compareTo(htblColNameValue.get(pk).toString()) > 0) {
-					p.tuples.insertElementAt(htblColNameValue, count);
+					p.tuples.insertElementAt(htblColNameValue, i);
+					serialize(p, strTableName+"page"+j+".ser");
 					redistributeIns(table);
 					test = true;
 					break;
@@ -133,21 +148,21 @@ public class DBApp {
 //			}
 		}
 
-		Hashtable<Integer,Integer > eachPageSizeAfter = new Hashtable<Integer, Integer>();
-		for(int x2 = 0;x2<table.rows.size();x2++) {
-			eachPageSizeAfter.put(x2, table.rows.get(x2).tuples.size());
-		}
-
-		if(eachPageSizeBefore.equals(eachPageSizeAfter)) {
-			if(table.rows.get(table.rows.size()-1).tuples.size() == Integer.parseInt(MaximumRowsCountinTablePage)) {
-				Page page = new Page(Integer.parseInt(MaximumRowsCountinTablePage));
-				page.tuples.add(htblColNameValue);
-				table.rows.add(page);
-			}
-			else {
-				table.rows.get(table.rows.size()-1).tuples.add(htblColNameValue);
-			}
-		}
+//		Hashtable<Integer,Integer > eachPageSizeAfter = new Hashtable<Integer, Integer>();
+//		for(int x2 = 0;x2<table.rows.size();x2++) {
+//			eachPageSizeAfter.put(x2, table.rows.get(x2).tuples.size());
+//		}
+//
+//		if(eachPageSizeBefore.equals(eachPageSizeAfter)) {
+//			if(table.rows.get(table.rows.size()-1).tuples.size() == Integer.parseInt(MaximumRowsCountinTablePage)) {
+//				Page page = new Page(Integer.parseInt(MaximumRowsCountinTablePage));
+//				page.tuples.add(htblColNameValue);
+//				table.rows.add(page);
+//			}
+//			else {
+//				table.rows.get(table.rows.size()-1).tuples.add(htblColNameValue);
+//			}
+//		}
 
 	}
 
@@ -156,19 +171,41 @@ public class DBApp {
 		{
 //			Vector<Page> v1 = table.rows;
 //			Vector<Hashtable<String,Object>> v2= v1.get(i).tuples;
-			if(table.rows.get(i).tuples.size()>Integer.parseInt(MaximumRowsCountinTablePage))
+			Page p = deserialize(table.getName()+"page"+i+".ser");
+//			if(table.rows.get(i).tuples.size()>Integer.parseInt(MaximumRowsCountinTablePage))
+			if(p.tuples.size()>Integer.parseInt(MaximumRowsCountinTablePage))
 			{
 				if(i==table.rows.size()-1)
 				{
 					Page page = new Page(Integer.parseInt(MaximumRowsCountinTablePage));
 					table.rows.add(page);
-					page.tuples.add(table.rows.get(i).tuples.get(table.rows.get(i).tuples.size()-1));
-					table.rows.get(i).tuples.remove(table.rows.get(i).tuples.size()-1);
+//					page.tuples.add(table.rows.get(i).tuples.get(table.rows.get(i).tuples.size()-1));
+//					table.rows.get(i).tuples.remove(table.rows.get(i).tuples.size()-1);
+
+					page.tuples.add(p.tuples.get(p.tuples.size()-1));
+					p.tuples.remove(p.tuples.size()-1);
+
+					int num = i+1;
+					serialize(page, table.getName()+"page"+num+".ser");
+
+					Page erase = null;
+					serialize(erase, table.getName() + "page" + i + ".ser");
+					serialize(p, table.getName()+"page"+i+".ser");
 				}
 				else
 				{
-					table.rows.get(i+1).tuples.insertElementAt(table.rows.get(i).tuples.get(table.rows.get(i).tuples.size()-1),0);
-					table.rows.get(i).tuples.remove(table.rows.get(i).tuples.size()-1);
+					//table.rows.get(i+1).tuples.insertElementAt(table.rows.get(i).tuples.get(table.rows.get(i).tuples.size()-1),0);
+					//table.rows.get(i).tuples.remove(table.rows.get(i).tuples.size()-1);
+					int n = i+1;
+					Page next = deserialize(table.getName()+"page"+n+".ser");
+					next.tuples.insertElementAt(p.tuples.get(p.tuples.size()-1), 0);
+					p.tuples.remove(p.tuples.size()-1);
+
+					Page erase = null;
+					serialize(erase, table.getName() + "page" + i + ".ser");
+					serialize(erase, table.getName() + "page" + n + ".ser");
+					serialize(p, table.getName()+"page"+i+".ser");
+					serialize(next,table.getName()+"page"+n+".ser");
 				}
 			}
 		}
@@ -197,7 +234,8 @@ public class DBApp {
 		boolean done = false;
 
 		for(int i = 0; i < table.rows.size();i++) { //make sure that we use binary search on content of pages not on pages themselves
-			Page p = table.rows.get(i);
+			Page p = deserialize(strTableName + "page" + i + ".ser");
+			//Page p = table.rows.get(i);
 			int first1 = 0;
 			int last1 = p.tuples.size()-1;
 			int mid1 = (first1 + last1)/2;
@@ -216,6 +254,9 @@ public class DBApp {
 							}
 						});
 					});
+					Page erase = null;
+					serialize(erase, strTableName + "page" + i + ".ser");
+					serialize(p, strTableName + "page" + i + ".ser");
 					done = true;
 					break;
 				}
@@ -239,6 +280,13 @@ public class DBApp {
 		htblColNameType.put("name", "java.lang.String");
 		htblColNameType.put("gpa", "java.lang.double");
 		dbApp.createTable( strTableName, "id", htblColNameType, htblColNameMin, htblColNameMax);
+
+		Hashtable htblColNameValue5 = new Hashtable( );
+		htblColNameValue5.put("id", new Integer( 2343429 ));
+		htblColNameValue5.put("name", new String("zoz" ) );
+		htblColNameValue5.put("gpa", new Double( 0.95 ) );
+		dbApp.insertIntoTable( strTableName , htblColNameValue5 );
+
 		Hashtable htblColNameValue = new Hashtable( );
 		htblColNameValue.put("id", new Integer( 2343432 ));
 		htblColNameValue.put("name", new String("Ahmed Noor" ) );
@@ -263,16 +311,16 @@ public class DBApp {
 		htblColNameValue3.put("gpa", new Double( 0.95 ) );
 		dbApp.insertIntoTable( strTableName , htblColNameValue3 );
 
-		Hashtable htblColNameValue5 = new Hashtable( );
-		htblColNameValue5.put("id", new Integer( 2343429 ));
-		htblColNameValue5.put("name", new String("zoz" ) );
-		htblColNameValue5.put("gpa", new Double( 0.95 ) );
-		dbApp.insertIntoTable( strTableName , htblColNameValue5 );
+//		Hashtable htblColNameValue5 = new Hashtable( );
+//		htblColNameValue5.put("id", new Integer( 2343429 ));
+//		htblColNameValue5.put("name", new String("zoz" ) );
+//		htblColNameValue5.put("gpa", new Double( 0.95 ) );
+//		dbApp.insertIntoTable( strTableName , htblColNameValue5 );
 //
 		Hashtable update = new Hashtable( );
-		update.put("name", new String("test update 2 col was mohamed" ) );
+		update.put("name", new String("test was ahmed noor" ) );
 		update.put("gpa", new Double(2.0) );
-		dbApp.updateTable(strTableName, "2343431", update);
+		dbApp.updateTable(strTableName, "2343432", update);
 
 //		Hashtable htblColNameValue4 = new Hashtable( );
 //		htblColNameValue4.put("id", new Integer( 2343433 ));
@@ -281,8 +329,10 @@ public class DBApp {
 //		dbApp.insertIntoTable( strTableName , htblColNameValue4 );
 		
 		Table t = dbApp.tables.get(0);
+		System.out.println(t.rows.size());
 		for(int i = 0;i < t.rows.size();i++) {
-			Page p = t.rows.get(i);
+			Page p = dbApp.deserialize(t.getName()+ "page" + i + ".ser");
+			//Page p = t.rows.get(i);
 			for(int j = 0;j<p.tuples.size();j++) {
 				Hashtable<String,Object> h = p.tuples.get(j);
 				System.out.println(h);
