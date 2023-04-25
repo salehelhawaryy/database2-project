@@ -129,11 +129,33 @@ public class DBApp {
 			for(int i = 0;i < p.tuples.size();i++) {
 				Hashtable<String,Object> tuple = p.tuples.get(i);
 				if(tuple.get(pk).toString().compareTo(htblColNameValue.get(pk).toString()) > 0) {
-					p.tuples.insertElementAt(htblColNameValue, i);
-					serialize(p, strTableName+"page"+j+".ser");
-					redistributeIns(table);
-					test = true;
-					break;
+					if(j==0) {
+						p.tuples.insertElementAt(htblColNameValue, i);
+						serialize(p, strTableName+"page"+j+".ser");
+						redistributeIns(table);
+						test = true;
+						break;
+					}
+					else {
+						int w = j-1;
+						Page ably = deserialize(strTableName + "page" + w + ".ser");
+						if(ably.tuples.size() < Integer.parseInt(MaximumRowsCountinTablePage)) {
+							ably.tuples.add(htblColNameValue);
+							serialize(ably, strTableName + "page" + w + ".ser");
+							System.out.println("hi");
+							test = true;
+							break;
+						}
+						else {
+							p.tuples.insertElementAt(htblColNameValue, i);
+							serialize(p, strTableName+"page"+j+".ser");
+							redistributeIns(table);
+							test = true;
+							break;
+						}
+
+					}
+
 				}
 				count ++;
 			}
@@ -269,6 +291,62 @@ public class DBApp {
 		}
 	}
 
+	public void deleteFromTable(String strTableName,
+								Hashtable<String,Object> htblColNameValue) throws DBAppException {
+		Table table = null;
+		Boolean found = false;
+		for(int i = 0; i< tables.size(); i++) {
+
+			if(tables.get(i).getName().equals(strTableName)) {
+				found = true;
+				table = tables.get(i);
+				break;
+			}
+		}
+//		int l = 0, r = tables.size()-1;
+//		while (l <= r) {
+//			int m = l + (r - l) / 2;
+//
+//			int res = strTableName.compareTo(String.valueOf(tables.get(m).getName().equals(strTableName)));
+//
+//			// Check if x is present at mid
+//			if (res == 0){
+//				found =true;
+//				table =tables.get(m);
+//				break;}
+//			// If x greater, ignore left half
+//			if (res > 0)
+//				l = m + 1;
+//
+//				// If x is smaller, ignore right half
+//			else
+//				r = m - 1;
+//		}
+		if (!found) {
+			throw new DBAppException();
+		}
+
+		String pk = table.getPK();
+
+		for(int i = 0; i < table.rows.size();i++) { //make sure that we use binary search on content of pages not on pages themselves
+			Page p = deserialize(strTableName + "page" + i + ".ser");
+			for(int j = 0; j< p.tuples.size();j++) {
+				if(htblColNameValue.get(pk).toString().compareTo(p.tuples.get(j).get(pk).toString()) == 0) {
+					p.tuples.remove(j);
+					if(p.tuples.size() == 0) {
+						table.rows.remove(p);
+						serialize(p, strTableName + "page" + i + ".ser");
+					}
+					else {
+						serialize(p, strTableName + "page" + i + ".ser");
+					}
+				}
+			}
+		}
+
+
+	}
+
 
 	public static void main(String[] args) throws IOException, DBAppException {
 		String strTableName = "Student";
@@ -310,6 +388,32 @@ public class DBApp {
 		htblColNameValue3.put("name", new String("mohamed" ) );
 		htblColNameValue3.put("gpa", new Double( 0.95 ) );
 		dbApp.insertIntoTable( strTableName , htblColNameValue3 );
+
+		Hashtable htblColNameValu = new Hashtable( );
+		htblColNameValu.put("id", new Integer( 2343431 ));
+		htblColNameValu.put("name", new String("Ahmed" ) );
+		htblColNameValu.put("gpa", new Double( 0.95 ) );
+		dbApp.deleteFromTable( strTableName , htblColNameValu );
+
+		Hashtable htblColNameVal = new Hashtable( );
+		htblColNameVal.put("id", new Integer( 2343430 ));
+		htblColNameVal.put("name", new String("mohamed" ) );
+		htblColNameVal.put("gpa", new Double( 0.95 ) );
+		dbApp.deleteFromTable( strTableName , htblColNameVal );
+
+		Hashtable htblColNameValue32 = new Hashtable( );
+		htblColNameValue32.put("id", new Integer( 2343431 ));
+		htblColNameValue32.put("name", new String("mohame" ) );
+		htblColNameValue32.put("gpa", new Double( 0.95 ) );
+		dbApp.insertIntoTable( strTableName , htblColNameValue32 );
+
+		Hashtable htblColNameVa = new Hashtable( );
+		htblColNameVa.put("id", new Integer( 2343432 ));
+		htblColNameVa.put("name", new String("test was ahmed noor" ) );
+		htblColNameVa.put("gpa", new Double( 0.95 ) );
+		dbApp.deleteFromTable( strTableName , htblColNameVa );
+
+
 
 //		Hashtable htblColNameValue5 = new Hashtable( );
 //		htblColNameValue5.put("id", new Integer( 2343429 ));
