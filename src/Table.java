@@ -1,9 +1,12 @@
+import java.io.Serializable;
 import java.util.Hashtable;
 import java.util.Vector;
 
-public class Table {
+public class Table implements Serializable {
    String name;
-   Vector<Page> rows;
+	private static final long serialVersionUID = 1L;
+
+	Vector<Page> rows;
    String PK;
    Hashtable<String, String> colNameType;
    Hashtable<String, String> colNameMin;
