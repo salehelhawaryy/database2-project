@@ -37,6 +37,7 @@ public class DBApp {
 	{
 		Table table =new Table(tableName,clusteringKey,ColNameType,ColNameMin,ColNameMax);
 		tables.add(table);
+		serializeTable(table, tableName+".class");
 	}
 
 	public void serialize(Page p, String fileName) {
@@ -83,7 +84,7 @@ public class DBApp {
 		}
 	}
 
-	public Table deserializeTable(String fileName){
+	public Table deserializeTable(String fileName) throws DBAppException {
 		Table p = null;
 		try {
 			FileInputStream fileInputStream = new FileInputStream(fileName);
@@ -92,7 +93,7 @@ public class DBApp {
 			objectInputStream.close();
 			fileInputStream.close();
 		} catch (IOException e) {
-			e.printStackTrace();
+			throw new DBAppException();
 		} catch (ClassNotFoundException e) {
 			e.printStackTrace();
 		}
@@ -101,21 +102,22 @@ public class DBApp {
 
 	public void insertIntoTable(String strTableName,
 								Hashtable<String,Object> htblColNameValue)
-			throws DBAppException
-	{
-		Table table = null;
-		Boolean found = false;
-		for(int i = 0; i< tables.size(); i++) {
+			throws DBAppException, java.io.FileNotFoundException {
+//		Table table = null;
+//		Boolean found = false;
+//		for(int i = 0; i< tables.size(); i++) {
+//
+//			if(tables.get(i).getName().equals(strTableName)) {
+//				found = true;
+//				table = tables.get(i);
+//				break;
+//			}
+//		}
+		Table table = deserializeTable(strTableName+".class");
 
-			if(tables.get(i).getName().equals(strTableName)) {
-				found = true;
-				table = tables.get(i);
-				break;
-			}
-		}
-		if(!found) {
-			throw new DBAppException();
-		}
+//		if(!found) {
+//			throw new DBAppException();
+//		}
 
 		if(table.rows.isEmpty()) {
 			Page page = new Page(Integer.parseInt(MaximumRowsCountinTablePage));
@@ -123,6 +125,7 @@ public class DBApp {
 			page.tuples.add(htblColNameValue);
 			String fileName = strTableName + "page" + 0 + ".class";
 			serialize(page, fileName);
+			serializeTable(table, table.getName()+".class");
 			return;
 		}
 
@@ -156,11 +159,13 @@ public class DBApp {
 				table.rows.add(page);
 				int num = newCount1 + 1;/////////////////////////////////////////////////////////////////////////////////////////
 				serialize(page, strTableName+"page"+num+".class");
+				serializeTable(table, table.getName()+".class");
 				return;
 			}
 			else {
 				max.tuples.add(htblColNameValue);
 				serialize(max, strTableName+"page"+newCount1+".class");////////////////////////////////////////////////////
+				serializeTable(table, table.getName()+".class");
 				return;
 			}
 		}
@@ -201,6 +206,7 @@ public class DBApp {
 					if(j==0) {
 						p.tuples.insertElementAt(htblColNameValue, mid);
 						serialize(p, strTableName+"page"+newCount+".class");///////////////////////////////////////
+						serializeTable(table, table.getName()+".class");
 						redistributeIns(table);
 						test = true;
 						break;
@@ -211,13 +217,14 @@ public class DBApp {
 						if(ably.tuples.size() < Integer.parseInt(MaximumRowsCountinTablePage)) {
 							ably.tuples.add(htblColNameValue);
 							serialize(ably, strTableName + "page" + w + ".class");
-							System.out.println("hi");
+							serializeTable(table, table.getName()+".class");
 							test = true;
 							break;
 						}
 						else {
 							p.tuples.insertElementAt(htblColNameValue, mid);
 							serialize(p, strTableName+"page"+newCount+".class");///////////////////////////////////////////////
+							serializeTable(table, table.getName()+".class");
 							redistributeIns(table);
 							test = true;
 							break;
@@ -325,6 +332,7 @@ public class DBApp {
 					Page erase = null;
 					serialize(erase, table.getName() + "page" + i + ".class");///////////////////////////////////////////////
 					serialize(p, table.getName()+"page"+newCount+".class");//////////////////////////////////////////////////////
+					serializeTable(table, table.getName()+".class");
 				}
 				else
 				{
@@ -340,6 +348,7 @@ public class DBApp {
 					serialize(erase, table.getName() + "page" + n + ".class");
 					serialize(p, table.getName()+"page"+newCount+".class");////////////////////////////////////////////////////////////////////
 					serialize(next,table.getName()+"page"+n+".class");
+					serializeTable(table, table.getName()+".class");
 				}
 			}
 		}
@@ -349,19 +358,21 @@ public class DBApp {
 							String strClusteringKeyValue,
 							Hashtable<String,Object> htblColNameValue )
 			throws DBAppException {
-		Table table = null;
-		Boolean found = false;
-		for(int i = 0; i< tables.size(); i++) {
+//		Table table = null;
+//		Boolean found = false;
+//		for(int i = 0; i< tables.size(); i++) {
+//
+//			if(tables.get(i).getName().equals(strTableName)) {
+//				found = true;
+//				table = tables.get(i);
+//				break;
+//			}
+//		}
+//		if(!found) {
+//			throw new DBAppException();
+//		}
 
-			if(tables.get(i).getName().equals(strTableName)) {
-				found = true;
-				table = tables.get(i);
-				break;
-			}
-		}
-		if(!found) {
-			throw new DBAppException();
-		}
+		Table table = deserializeTable(strTableName+".class");
 
 
 		String pk = table.getPK();
@@ -408,6 +419,7 @@ public class DBApp {
 					Page erase = null;
 					serialize(erase, strTableName + "page" + newCount + ".class");///////////////////////////////////////////////////////////////
 					serialize(p, strTableName + "page" + newCount + ".class");//////////////////////////////////////////////////////////////////
+					serializeTable(table, table.getName()+".class");
 					done = true;
 					break;
 				}
@@ -422,38 +434,40 @@ public class DBApp {
 
 	public void deleteFromTable(String strTableName,
 								Hashtable<String,Object> htblColNameValue) throws DBAppException {
-		Table table = null;
-		Boolean found = false;
-//		for(int i = 0; i< tables.size(); i++) {
+//		Table table = null;
+//		Boolean found = false;
+////		for(int i = 0; i< tables.size(); i++) {
+////
+////			if(tables.get(i).getName().equals(strTableName)) {
+////				found = true;
+////				table = tables.get(i);
+////				break;
+////			}
+////		}
+//		int l = 0, r = tables.size()-1;
+//		while (l <= r) {
+//			int m = l + (r - l) / 2;
 //
-//			if(tables.get(i).getName().equals(strTableName)) {
-//				found = true;
-//				table = tables.get(i);
-//				break;
-//			}
+//			//int res = strTableName.compareTo(String.valueOf(tables.get(m).getName().equals(strTableName)));
+//			int res = tables.get(m).getName().compareTo(strTableName);
+//			// Check if x is present at mid
+//			if (res == 0){
+//				found =true;
+//				table =tables.get(m);
+//				break;}
+//			// If x greater, ignore left half
+//			if (res > 0)
+//				l = m + 1;
+//
+//				// If x is smaller, ignore right half
+//			else
+//				r = m - 1;
 //		}
-		int l = 0, r = tables.size()-1;
-		while (l <= r) {
-			int m = l + (r - l) / 2;
+//		if (!found) {
+//			throw new DBAppException();
+//		}
 
-			//int res = strTableName.compareTo(String.valueOf(tables.get(m).getName().equals(strTableName)));
-			int res = tables.get(m).getName().compareTo(strTableName);
-			// Check if x is present at mid
-			if (res == 0){
-				found =true;
-				table =tables.get(m);
-				break;}
-			// If x greater, ignore left half
-			if (res > 0)
-				l = m + 1;
-
-				// If x is smaller, ignore right half
-			else
-				r = m - 1;
-		}
-		if (!found) {
-			throw new DBAppException();
-		}
+		Table table = deserializeTable(strTableName + ".class");
 
 		String pk = table.getPK();
 
@@ -503,6 +517,7 @@ public class DBApp {
 								f.deleteOnExit();
 							}
 							serialize(p, strTableName + "page" + newCount + ".class");////////////////////////////////////////////////////////
+							serializeTable(table, table.getName()+".class");
 							return;
 						}
 
@@ -554,6 +569,7 @@ public class DBApp {
 					}
 
 					serialize(p, strTableName + "page" + newCount + ".class");
+					serializeTable(table, table.getName()+".class");
 
 				}
 			}
@@ -653,7 +669,8 @@ public class DBApp {
 		dbApp.insertIntoTable( strTableName , htblColNameValue4 );
 
 
-		Table t = dbApp.tables.get(0);
+//		Table t = dbApp.tables.get(0);
+		Table t = dbApp.deserializeTable(strTableName+".class");
 		System.out.println(t.rows.size());
 		boolean findPage = false;
 		for(int i = 0;i < t.rows.size();i++) {
