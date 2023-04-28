@@ -1,3 +1,4 @@
+import java.io.File;
 import java.io.Serializable;
 import java.util.Hashtable;
 import java.util.Vector;
@@ -12,6 +13,8 @@ public class Table implements Serializable {
    Hashtable<String, String> colNameMin;
    Hashtable<String, String> colNameMax;
 
+   Vector<String> serializedFilesName;
+
    public Table(String name,String PK,Hashtable<String, String> colNameType,Hashtable<String,String> colNameMin,Hashtable<String,String> colNameMax)
    {
 	   rows = new Vector<Page>();
@@ -20,6 +23,7 @@ public class Table implements Serializable {
 	   this.colNameType=colNameType;
 	   this.colNameMax=colNameMax;
 	   this.colNameMin=colNameMin;
+	   serializedFilesName = new Vector<String>();
    }
    
    public String getName() {

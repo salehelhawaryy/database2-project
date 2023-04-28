@@ -1,12 +1,7 @@
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
+import java.io.*;
 import java.util.Hashtable;
 import java.util.Properties;
 import java.util.Vector;
-import java.io.FileOutputStream;
-import java.io.ObjectOutputStream;
-import java.io.ObjectInputStream;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -32,12 +27,41 @@ public class DBApp {
 
 	}
 
+	static String getAlphaNumericString()
+	{
+		int n = 20;
+		// choose a Character random from this String
+		String AlphaNumericString = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+				+ "0123456789"
+				+ "abcdefghijklmnopqrstuvxyz";
+
+		// create StringBuffer size of AlphaNumericString
+		StringBuilder sb = new StringBuilder(n);
+
+		for (int i = 0; i < n; i++) {
+
+			// generate a random number between
+			// 0 to AlphaNumericString variable length
+			int index
+					= (int)(AlphaNumericString.length()
+					* Math.random());
+
+			// add Character one by one in end of sb
+			sb.append(AlphaNumericString
+					.charAt(index));
+		}
+
+		return sb.toString();
+	}
+
 	public void createTable(String tableName,String clusteringKey, Hashtable<String,String> ColNameType,  
 		Hashtable<String, String> ColNameMin,Hashtable<String,String> ColNameMax) throws DBAppException
 	{
 		Table table =new Table(tableName,clusteringKey,ColNameType,ColNameMin,ColNameMax);
 		tables.add(table);
 		serializeTable(table, tableName+".class");
+		File f = new File(tableName);
+		f.mkdir();
 	}
 
 	public void serialize(Page p, String fileName) {
@@ -102,7 +126,7 @@ public class DBApp {
 
 	public void insertIntoTable(String strTableName,
 								Hashtable<String,Object> htblColNameValue)
-			throws DBAppException, java.io.FileNotFoundException {
+			throws DBAppException {
 //		Table table = null;
 //		Boolean found = false;
 //		for(int i = 0; i< tables.size(); i++) {
@@ -123,8 +147,13 @@ public class DBApp {
 			Page page = new Page(Integer.parseInt(MaximumRowsCountinTablePage));
 			table.rows.add(page);
 			page.tuples.add(htblColNameValue);
-			String fileName = strTableName + "page" + 0 + ".class";
+			String fileName = strTableName+"/"+getAlphaNumericString();
+			fileName+=".class";
+
 			serialize(page, fileName);
+			table.serializedFilesName.add(fileName);
+//			String fileName = strTableName + "page" + 0 + ".class";
+//			serialize(page, fileName);
 			serializeTable(table, table.getName()+".class");
 			return;
 		}
@@ -136,56 +165,35 @@ public class DBApp {
 
 		//for the case that the insertion is the largest in the table
 		int maxPage = table.rows.size()-1;
-		boolean findPage1 = false;
-		Page max = null;
-		int newCount1 = maxPage;
-		while(!findPage1) {
-			File f = new File(strTableName + "page" + newCount1 + ".class");
-			max = deserialize(strTableName + "page" + newCount1 + ".class");
+		String f = table.serializedFilesName.get(maxPage);
 
-			if(!max.tuples.isEmpty()) {
-				findPage1 = true;
-				break;
-			}
-			newCount1++;
-		}
-
-//		max = deserialize(strTableName+"page"+maxPage+".class");
+		Page max = deserialize(f);
 		Hashtable<String,Object> maxTuple = max.tuples.get(max.tuples.size()-1);
 		if(maxTuple.get(pk).toString().compareTo(htblColNameValue.get(pk).toString()) < 0) {
 			if(max.tuples.size() == Integer.parseInt(MaximumRowsCountinTablePage)) {
 				Page page = new Page(Integer.parseInt(MaximumRowsCountinTablePage));
 				page.tuples.add(htblColNameValue);
 				table.rows.add(page);
-				int num = newCount1 + 1;/////////////////////////////////////////////////////////////////////////////////////////
-				serialize(page, strTableName+"page"+num+".class");
+				//int num = newCount1 + 1;/////////////////////////////////////////////////////////////////////////////////////////
+				String fileName = strTableName+"/"+getAlphaNumericString();
+				fileName+=".class";
+				serialize(page, fileName);
+				table.serializedFilesName.add(fileName);
 				serializeTable(table, table.getName()+".class");
 				return;
 			}
 			else {
 				max.tuples.add(htblColNameValue);
-				serialize(max, strTableName+"page"+newCount1+".class");////////////////////////////////////////////////////
+				serialize(max, f);////////////////////////////////////////////////////
 				serializeTable(table, table.getName()+".class");
 				return;
 			}
 		}
 
-		boolean findPage = false;
 		for(int j = 0;j<table.rows.size();j++ ) {
 
-			Page p = null;
-			int newCount = j;
-			while(!findPage) {
-				File f = new File(strTableName + "page" + newCount + ".class");
-				p = deserialize(strTableName + "page" + newCount + ".class");
-
-				if(!p.tuples.isEmpty()) {
-					findPage = true;
-					break;
-				}
-				newCount++;
-			}
-			findPage = false;
+			String fil = table.serializedFilesName.get(j);
+			Page p = deserialize(fil);
 
 
 			//Page p = deserialize(strTableName + "page" + j + ".class");
@@ -202,28 +210,32 @@ public class DBApp {
 				if (tuple.get(pk).toString().compareTo(htblColNameValue.get(pk).toString()) < 0) {
 					start = mid + 1;
 				}
+				else if (tuple.get(pk).toString().compareTo(htblColNameValue.get(pk).toString()) == 0) {
+					throw new DBAppException();
+				}
 				else {
 					if(j==0) {
 						p.tuples.insertElementAt(htblColNameValue, mid);
-						serialize(p, strTableName+"page"+newCount+".class");///////////////////////////////////////
+						serialize(p, fil);///////////////////////////////////////
 						serializeTable(table, table.getName()+".class");
 						redistributeIns(table);
 						test = true;
 						break;
 					}
 					else {
-						int w = newCount-1;//////////////////////////////////////////////////////////////////////////////////
-						Page ably = deserialize(strTableName + "page" + w + ".class");
-						if(ably.tuples.size() < Integer.parseInt(MaximumRowsCountinTablePage)) {
-							ably.tuples.add(htblColNameValue);
-							serialize(ably, strTableName + "page" + w + ".class");
+//						int w = newCount-1;//////////////////////////////////////////////////////////////////////////////////
+						String fi = table.serializedFilesName.get(j-1);
+						Page beforeMe = deserialize(fi);
+						if(beforeMe.tuples.size() < Integer.parseInt(MaximumRowsCountinTablePage)) {
+							beforeMe.tuples.add(htblColNameValue);
+							serialize(beforeMe, fi);
 							serializeTable(table, table.getName()+".class");
 							test = true;
 							break;
 						}
 						else {
 							p.tuples.insertElementAt(htblColNameValue, mid);
-							serialize(p, strTableName+"page"+newCount+".class");///////////////////////////////////////////////
+							serialize(p, fil);///////////////////////////////////////////////
 							serializeTable(table, table.getName()+".class");
 							redistributeIns(table);
 							test = true;
@@ -300,19 +312,8 @@ public class DBApp {
 		boolean findPage = false;
 		for(int i=0;i<table.rows.size();i++)
 		{
-			Page p = null;
-			int newCount = i;
-			while(!findPage) {
-				File f = new File(table.getName() + "page" + newCount + ".class");
-				p = deserialize(table.getName() + "page" + newCount + ".class");
-
-				if(!p.tuples.isEmpty()) {
-					findPage = true;
-					break;
-				}
-				newCount++;
-			}
-			findPage = false;
+			String f = table.serializedFilesName.get(i);
+			Page p = deserialize(f);
 			//Page p = deserialize(table.getName()+"page"+i+".class");
 			if(p.tuples.size()>Integer.parseInt(MaximumRowsCountinTablePage))
 			{
@@ -320,34 +321,40 @@ public class DBApp {
 				{
 					Page page = new Page(Integer.parseInt(MaximumRowsCountinTablePage));
 					table.rows.add(page);
+					String fileName = table.getName()+"/"+getAlphaNumericString();
+					fileName+=".class";
+//					serialize(page, fileName);
+					table.serializedFilesName.add(fileName);
 //					page.tuples.add(table.rows.get(i).tuples.get(table.rows.get(i).tuples.size()-1));
 //					table.rows.get(i).tuples.remove(table.rows.get(i).tuples.size()-1);
 
 					page.tuples.add(p.tuples.get(p.tuples.size()-1));
 					p.tuples.remove(p.tuples.size()-1);
 
-					int num = newCount+1;/////////////////////////////////////////////////////////////////////////////////
-					serialize(page, table.getName()+"page"+num+".class");
+					//int num = newCount+1;/////////////////////////////////////////////////////////////////////////////////
+					//String fi = table.serializedFilesName.get(i+1);
+					serialize(page, fileName);
 
 					Page erase = null;
-					serialize(erase, table.getName() + "page" + i + ".class");///////////////////////////////////////////////
-					serialize(p, table.getName()+"page"+newCount+".class");//////////////////////////////////////////////////////
+					serialize(erase, f);///////////////////////////////////////////////
+					serialize(p, f);//////////////////////////////////////////////////////
 					serializeTable(table, table.getName()+".class");
 				}
 				else
 				{
 					//table.rows.get(i+1).tuples.insertElementAt(table.rows.get(i).tuples.get(table.rows.get(i).tuples.size()-1),0);
 					//table.rows.get(i).tuples.remove(table.rows.get(i).tuples.size()-1);
-					int n = newCount+1;//////////////////////////////////////////////////////////////////////////////////////////////////
-					Page next = deserialize(table.getName()+"page"+n+".class");
+					//int n = newCount+1;//////////////////////////////////////////////////////////////////////////////////////////////////
+					String fi = table.serializedFilesName.get(i+1);
+					Page next = deserialize(fi);
 					next.tuples.insertElementAt(p.tuples.get(p.tuples.size()-1), 0);
 					p.tuples.remove(p.tuples.size()-1);
 
 					Page erase = null;
-					serialize(erase, table.getName() + "page" + newCount + ".class");////////////////////////////////////////////////////
-					serialize(erase, table.getName() + "page" + n + ".class");
-					serialize(p, table.getName()+"page"+newCount+".class");////////////////////////////////////////////////////////////////////
-					serialize(next,table.getName()+"page"+n+".class");
+					serialize(erase, f);////////////////////////////////////////////////////
+					serialize(erase, fi);
+					serialize(p, f);////////////////////////////////////////////////////////////////////
+					serialize(next,fi);
 					serializeTable(table, table.getName()+".class");
 				}
 			}
@@ -358,45 +365,18 @@ public class DBApp {
 							String strClusteringKeyValue,
 							Hashtable<String,Object> htblColNameValue )
 			throws DBAppException {
-//		Table table = null;
-//		Boolean found = false;
-//		for(int i = 0; i< tables.size(); i++) {
-//
-//			if(tables.get(i).getName().equals(strTableName)) {
-//				found = true;
-//				table = tables.get(i);
-//				break;
-//			}
-//		}
-//		if(!found) {
-//			throw new DBAppException();
-//		}
+
 
 		Table table = deserializeTable(strTableName+".class");
 
 
 		String pk = table.getPK();
 		boolean done = false;
-		boolean findPage = false;
 
 		for(int i = 0; i < table.rows.size();i++) { //make sure that we use binary search on content of pages not on pages themselves
-			Page p = null;
-			int newCount = i;
-			while(!findPage) {
-				File f = new File(strTableName + "page" + newCount + ".class");
-				p = deserialize(strTableName + "page" + newCount + ".class");
-				if(!p.tuples.isEmpty()) {
-					findPage = true;
+			String f = table.serializedFilesName.get(i);
+			Page p = deserialize(f);
 
-					break;
-				}
-				newCount++;
-			}
-			findPage = false;
-
-
-			// Page p = deserialize(strTableName + "page" + i + ".class");
-			//Page p = table.rows.get(i);
 			int first1 = 0;
 			int last1 = p.tuples.size()-1;
 			int mid1 = (first1 + last1)/2;
@@ -417,8 +397,8 @@ public class DBApp {
 						});
 					});
 					Page erase = null;
-					serialize(erase, strTableName + "page" + newCount + ".class");///////////////////////////////////////////////////////////////
-					serialize(p, strTableName + "page" + newCount + ".class");//////////////////////////////////////////////////////////////////
+					serialize(erase, f);///////////////////////////////////////////////////////////////
+					serialize(p, f);//////////////////////////////////////////////////////////////////
 					serializeTable(table, table.getName()+".class");
 					done = true;
 					break;
@@ -472,22 +452,27 @@ public class DBApp {
 		String pk = table.getPK();
 
 		if((htblColNameValue.containsKey(pk))) {
-			boolean findPage = false;
+//			boolean findPage = false;
 
 			for(int i = 0; i < table.rows.size();i++) { //make sure that we use binary search on content of pages not on pages themselves
-				Page p = null;
-				int newCount = i;
-				while(!findPage) {
-					File f = new File(strTableName + "page" + newCount + ".class");
-					p = deserialize(strTableName + "page" + newCount + ".class");
-					if(!p.tuples.isEmpty()) {
-						findPage = true;
+//				Page p = null;
+//				int newCount = i;
+//				while(!findPage) {
+//					File f = new File(strTableName + "page" + newCount + ".class");
+//					p = deserialize(strTableName + "page" + newCount + ".class");
+//					if(!p.tuples.isEmpty()) {
+//						findPage = true;
+//
+//						break;
+//					}
+//					newCount++;
+//				}
+//				findPage = false;
 
-						break;
-					}
-					newCount++;
-				}
-				findPage = false;
+				String f = table.serializedFilesName.get(i);
+				Page p = deserialize(f);
+
+
 
 
 				// Page p = deserialize(strTableName + "page" + i + ".class");
@@ -513,10 +498,13 @@ public class DBApp {
 							p.tuples.remove(mid1);
 							if(p.tuples.isEmpty()) {
 								table.rows.remove(i);//////////////////////////////////////////////////////////////////
-								File f = files.get(strTableName + "page" + newCount + ".class");/////////////////////////////////////////
-								f.deleteOnExit();
+								table.serializedFilesName.remove(i);
+								File fe = new File(f);/////////////////////////////////////////
+								fe.delete();
 							}
-							serialize(p, strTableName + "page" + newCount + ".class");////////////////////////////////////////////////////////
+							else {
+								serialize(p, f);////////////////////////////////////////////////////////
+							}
 							serializeTable(table, table.getName()+".class");
 							return;
 						}
@@ -531,22 +519,10 @@ public class DBApp {
 		}
 
 
-		boolean findPage = false;
 		for(int i = 0; i < table.rows.size();i++) { //make sure that we use binary search on content of pages not on pages themselves
 
-			Page p = null;
-			int newCount = i;
-			while(!findPage) {
-				File f = new File(strTableName + "page" + newCount + ".class");
-				p = deserialize(strTableName + "page" + newCount + ".class");
-				if(!p.tuples.isEmpty()) {
-					findPage = true;
-
-					break;
-				}
-				newCount++;
-			}
-			findPage = false;
+			String f = table.serializedFilesName.get(i);
+			Page p = deserialize(f);
 
 
 
@@ -564,11 +540,15 @@ public class DBApp {
 					p.tuples.remove(j);
 					if(p.tuples.isEmpty()) {
 						table.rows.remove(i);
-						File f = files.get(strTableName + "page" + newCount + ".class");///////////////////////////////
-						f.deleteOnExit();
+						table.serializedFilesName.remove(i);
+						File fe = files.get(f);///////////////////////////////
+						fe.delete();
+					}
+					else {
+						serialize(p, f);
 					}
 
-					serialize(p, strTableName + "page" + newCount + ".class");
+
 					serializeTable(table, table.getName()+".class");
 
 				}
@@ -588,104 +568,99 @@ public class DBApp {
 		htblColNameType.put("id", "java.lang.Integer");
 		htblColNameType.put("name", "java.lang.String");
 		htblColNameType.put("gpa", "java.lang.double");
-		dbApp.createTable( strTableName, "id", htblColNameType, htblColNameMin, htblColNameMax);
-
-		Hashtable htblColNameValue5 = new Hashtable( );
-		htblColNameValue5.put("id", new Integer( 2343429 ));
-		htblColNameValue5.put("name", new String("zoz" ) );
-		htblColNameValue5.put("gpa", new Double( 0.95 ) );
-		dbApp.insertIntoTable( strTableName , htblColNameValue5 );
-
-		Hashtable htblColNameValue = new Hashtable( );
-		htblColNameValue.put("id", new Integer( 2343432 ));
-		htblColNameValue.put("name", new String("Ahmed Noor" ) );
-		htblColNameValue.put("gpa", new Double( 0.95 ) );
-		dbApp.insertIntoTable( strTableName , htblColNameValue );
-
-		Hashtable htblColNameValue1 = new Hashtable( );
-		htblColNameValue1.put("id", new Integer( 2343433 ));
-		htblColNameValue1.put("name", new String("youssef" ) );
-		htblColNameValue1.put("gpa", new Double( 0.95 ) );
-		dbApp.insertIntoTable( strTableName , htblColNameValue1 );
-
-		Hashtable htblColNameValue2 = new Hashtable( );
-		htblColNameValue2.put("id", new Integer( 2343431 ));
-		htblColNameValue2.put("name", new String("Ahmed" ) );
-		htblColNameValue2.put("gpa", new Double( 0.95 ) );
-		dbApp.insertIntoTable( strTableName , htblColNameValue2 );
-
-		Hashtable htblColNameValue3 = new Hashtable( );
-		htblColNameValue3.put("id", new Integer( 2343430 ));
-		htblColNameValue3.put("name", new String("mohamed" ) );
-		htblColNameValue3.put("gpa", new Double( 0.95 ) );
-		dbApp.insertIntoTable( strTableName , htblColNameValue3 );
-
-
+		//dbApp.createTable( strTableName, "id", htblColNameType, htblColNameMin, htblColNameMax);
 //
-		Hashtable htblColNameVal = new Hashtable( );
-		htblColNameVal.put("id", new Integer( 2343430 ));
-		htblColNameVal.put("name", new String("mohamed" ) );
-		htblColNameVal.put("gpa", new Double( 0.95 ) );
-		dbApp.deleteFromTable( strTableName , htblColNameVal );
-
-//		Hashtable htblColNameValue32 = new Hashtable( );
-//		htblColNameValue32.put("id", new Integer( 2343431 ));
-//		htblColNameValue32.put("name", new String("mohame" ) );
-//		htblColNameValue32.put("gpa", new Double( 0.95 ) );
-//		dbApp.insertIntoTable( strTableName , htblColNameValue32 );
-//
-//		Hashtable htblColNameVa = new Hashtable( );
-//		htblColNameVa.put("id", new Integer( 2343432 ));
-//		htblColNameVa.put("name", new String("test was ahmed noor" ) );
-//		htblColNameVa.put("gpa", new Double( 0.95 ) );
-//		dbApp.deleteFromTable( strTableName , htblColNameVa );
-
-
-
 //		Hashtable htblColNameValue5 = new Hashtable( );
 //		htblColNameValue5.put("id", new Integer( 2343429 ));
 //		htblColNameValue5.put("name", new String("zoz" ) );
 //		htblColNameValue5.put("gpa", new Double( 0.95 ) );
 //		dbApp.insertIntoTable( strTableName , htblColNameValue5 );
 //
-		Hashtable update = new Hashtable( );
-		update.put("name", new String("test was ahmed noor" ) );
-		update.put("gpa", new Double(2.0) );
-		dbApp.updateTable(strTableName, "2343432", update);
+//		Hashtable htblColNameValue = new Hashtable( );
+//		htblColNameValue.put("id", new Integer( 2343432 ));
+//		htblColNameValue.put("name", new String("Ahmed Noor" ) );
+//		htblColNameValue.put("gpa", new Double( 0.95 ) );
+//		dbApp.insertIntoTable( strTableName , htblColNameValue );
 //
-		Hashtable htblColNameValu = new Hashtable( );
-		htblColNameValu.put("name", new String("test was ahmed noor" ) );
-		htblColNameValu.put("gpa", new Double(2.0 ) );
-		dbApp.deleteFromTable( strTableName , htblColNameValu );
+//		Hashtable htblColNameValue1 = new Hashtable( );
+//		htblColNameValue1.put("id", new Integer( 2343433 ));
+//		htblColNameValue1.put("name", new String("youssef" ) );
+//		htblColNameValue1.put("gpa", new Double( 0.95 ) );
+//		dbApp.insertIntoTable( strTableName , htblColNameValue1 );
 //
-		Hashtable htblColNameV = new Hashtable( );
-		htblColNameV.put("name", new String("Ahmed" ) );
-		dbApp.deleteFromTable( strTableName , htblColNameV );
+//		Hashtable htblColNameValue2 = new Hashtable( );
+//		htblColNameValue2.put("id", new Integer( 2343431 ));
+//		htblColNameValue2.put("name", new String("Ahmed" ) );
+//		htblColNameValue2.put("gpa", new Double( 0.95 ) );
+//		dbApp.insertIntoTable( strTableName , htblColNameValue2 );
+//
+//		Hashtable htblColNameValue3 = new Hashtable( );
+//		htblColNameValue3.put("id", new Integer( 2343430 ));
+//		htblColNameValue3.put("name", new String("mohamed" ) );
+//		htblColNameValue3.put("gpa", new Double( 0.95 ) );
+//		dbApp.insertIntoTable( strTableName , htblColNameValue3 );
 
-		Hashtable htblColNameValue4 = new Hashtable( );
-		htblColNameValue4.put("id", new Integer( 2343434 ));
-		htblColNameValue4.put("name", new String("zizooo" ) );
-		htblColNameValue4.put("gpa", new Double( 0.95 ) );
-		dbApp.insertIntoTable( strTableName , htblColNameValue4 );
+//
+//
+//		Hashtable htblColNameVal = new Hashtable( );
+//		htblColNameVal.put("id", new Integer( 2343431 ));
+//		htblColNameVal.put("name", new String("Ahmed" ) );
+//		htblColNameVal.put("gpa", new Double( 0.95 ) );
+//		dbApp.deleteFromTable( strTableName , htblColNameVal );
+////
+//////		Hashtable htblColNameValue32 = new Hashtable( );
+//////		htblColNameValue32.put("id", new Integer( 2343431 ));
+//////		htblColNameValue32.put("name", new String("mohame" ) );
+//////		htblColNameValue32.put("gpa", new Double( 0.95 ) );
+//////		dbApp.insertIntoTable( strTableName , htblColNameValue32 );
+//////
+//		Hashtable htblColNameVa = new Hashtable( );
+//		htblColNameVa.put("id", new Integer( 2343432 ));
+////		htblColNameVa.put("name", new String("test was ahmed noor" ) );
+////		htblColNameVa.put("gpa", new Double( 0.95 ) );
+//		dbApp.deleteFromTable( strTableName , htblColNameVa );
+//
+//
+//
+////		Hashtable htblColNameValue5 = new Hashtable( );
+////		htblColNameValue5.put("id", new Integer( 2343429 ));
+////		htblColNameValue5.put("name", new String("zoz" ) );
+////		htblColNameValue5.put("gpa", new Double( 0.95 ) );
+////		dbApp.insertIntoTable( strTableName , htblColNameValue5 );
+////
+//		Hashtable update = new Hashtable( );
+//		update.put("name", new String("test was Ahmed" ) );
+//		update.put("gpa", new Double(2.0) );
+//		dbApp.updateTable(strTableName, "2343431", update);
+////
+//		Hashtable htblColNameValu = new Hashtable( );
+//		htblColNameValu.put("name", new String("test was ahmed noor" ) );
+//		htblColNameValu.put("gpa", new Double(2.0 ) );
+//		dbApp.deleteFromTable( strTableName , htblColNameValu );
+////
+//		Hashtable htblColNameV = new Hashtable( );
+//		htblColNameV.put("name", new String("Ahmed" ) );
+//		dbApp.deleteFromTable( strTableName , htblColNameV );
+//
+//		Hashtable htblColNameValue4 = new Hashtable( );
+//		htblColNameValue4.put("id", new Integer( 2343434 ));
+//		htblColNameValue4.put("name", new String("zizooo" ) );
+//		htblColNameValue4.put("gpa", new Double( 0.95 ) );
+//		dbApp.insertIntoTable( strTableName , htblColNameValue4 );
+//
+//		Hashtable htblColNameValue66 = new Hashtable( );
+//		htblColNameValue66.put("id", new Integer( 2343435 ));
+//		htblColNameValue66.put("name", new String("yarab" ) );
+//		htblColNameValue66.put("gpa", new Double( 0.95 ) );
+//		dbApp.insertIntoTable( strTableName , htblColNameValue66 );
 
 
-//		Table t = dbApp.tables.get(0);
 		Table t = dbApp.deserializeTable(strTableName+".class");
 		System.out.println(t.rows.size());
-		boolean findPage = false;
 		for(int i = 0;i < t.rows.size();i++) {
-			Page p = null;
-			int newCount = i;
-			while(!findPage) {
-				File f = new File(strTableName + "page" + newCount + ".class");
-				p = dbApp.deserialize(strTableName + "page" + newCount + ".class");
-				if(!p.tuples.isEmpty()) {
-					findPage = true;
-					break;
-				}
-				newCount++;
-			}
-			findPage = false;
+
+			String f = t.serializedFilesName.get(i);
+			Page p = dbApp.deserialize(f);
 			//Page p = t.rows.get(i);
 			for(int j = 0;j<p.tuples.size();j++) {
 				Hashtable<String,Object> h = p.tuples.get(j);
