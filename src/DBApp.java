@@ -1,12 +1,12 @@
 import java.io.*;
-import java.util.Hashtable;
-import java.util.Properties;
-import java.util.Vector;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 
 public class DBApp {
+
+	boolean ranOnce = false;
 	Vector<Table> tables;
 
 	Hashtable<String, File> files;
@@ -22,9 +22,29 @@ public class DBApp {
 		 MaximumRowsCountinTablePage = p.getProperty("MaximumRowsCountinTablePage");
 		 MaximumEntriesinOctreeNode = p.getProperty("MaximumEntriesinOctreeNode");
 	}
-
 	public void init( ){
 
+	}
+
+	public static Vector<Vector<String>> readCSV() throws IOException {
+		BufferedReader br = new BufferedReader(new FileReader("metadata.csv"));
+		String line = br.readLine();
+		Vector<Vector<String>> vecvec = new Vector<>();
+		int c = 0;
+		while (line != null) {
+			String[] content = line.split(",");
+			if (c == 0) {
+				c++;
+				line = br.readLine();
+				continue;
+			}
+			Vector<String> vec = new Vector<>(Arrays.asList(content));
+			vecvec.add(vec);
+
+			line = br.readLine();
+		}
+		br.close();
+		return vecvec;
 	}
 
 	static String getAlphaNumericString()
@@ -54,14 +74,72 @@ public class DBApp {
 		return sb.toString();
 	}
 
-	public void createTable(String tableName,String clusteringKey, Hashtable<String,String> ColNameType,  
-		Hashtable<String, String> ColNameMin,Hashtable<String,String> ColNameMax) throws DBAppException
-	{
-		Table table =new Table(tableName,clusteringKey,ColNameType,ColNameMin,ColNameMax);
+	public void createTable(String strTableName,String strClusteringKeyColumn, Hashtable<String,String> htblColNameType,
+		Hashtable<String, String> htblColNameMin,Hashtable<String,String> htblColNameMax) throws DBAppException, IOException {
+		String Colname;
+		String Coltype;
+		String Clusterkey="false";
+		String Min;
+		String Max;
+		Table table = new Table(strTableName,strClusteringKeyColumn,htblColNameType,htblColNameMin,htblColNameMax);
 		tables.add(table);
-		serializeTable(table, tableName+".class");
-		File f = new File(tableName);
+		serializeTable(table, strTableName+".class");
+		File f = new File(strTableName);
 		f.mkdir();
+
+		Enumeration<String> enu = htblColNameType.keys();
+
+		PrintWriter pw = new PrintWriter(new FileWriter("metadata.csv", true));
+		StringBuilder sb = new StringBuilder();
+
+		if (!ranOnce) {
+			ranOnce = true;
+			sb.append("Table Name");
+			sb.append(",");
+			sb.append("Column Name");
+			sb.append(",");
+			sb.append("Column Type");
+			sb.append(",");
+			sb.append("Clusterkey");
+			sb.append(",");
+			sb.append("IndexName");
+			sb.append(",");
+			sb.append("IndexType");
+			sb.append(",");
+			sb.append("min");
+			sb.append(",");
+			sb.append("max");
+			sb.append("\r\n");
+		}
+
+		while (enu.hasMoreElements()) {
+			Colname = enu.nextElement().toString();
+			Coltype = htblColNameType.get(Colname);
+			if (Colname == strClusteringKeyColumn) {
+				Clusterkey = "true";
+			}
+			Min = htblColNameMin.get(Colname);
+			Max = htblColNameMax.get(Colname);
+			sb.append(strTableName);
+			sb.append(",");
+			sb.append(Colname);
+			sb.append(",");
+			sb.append(Coltype);
+			sb.append(",");
+			sb.append(Clusterkey);
+			sb.append(",");
+			sb.append("null");
+			sb.append(",");
+			sb.append("null");
+			sb.append(",");
+			sb.append(Min);
+			sb.append(",");
+			sb.append(Max);
+			sb.append("\r\n");
+		}
+		pw.flush();
+		pw.write(sb.toString());
+		pw.close();
 	}
 
 	public void serialize(Page p, String fileName) {
@@ -126,22 +204,62 @@ public class DBApp {
 
 	public void insertIntoTable(String strTableName,
 								Hashtable<String,Object> htblColNameValue)
-			throws DBAppException {
-//		Table table = null;
-//		Boolean found = false;
-//		for(int i = 0; i< tables.size(); i++) {
-//
-//			if(tables.get(i).getName().equals(strTableName)) {
-//				found = true;
-//				table = tables.get(i);
-//				break;
+			throws DBAppException, IOException {
+
+		Table table = deserializeTable(strTableName+".class");
+//		Vector<Vector<String>> vecvec = readCSV();
+		boolean check = checkcallname(strTableName,htblColNameValue);
+
+		if (!check) {
+			throw new DBAppException();
+		}
+
+//		for (int i = 0; i < vecvec.size(); i++) {
+//			for (int j = 0; j < vecvec.get(i).size(); j++) {
+//				System.out.println(vecvec.get(i).get(j));
 //			}
 //		}
-		Table table = deserializeTable(strTableName+".class");
 
-//		if(!found) {
-//			throw new DBAppException();
+//		int keyNotEqualCol = 0;
+//		int totalCol = 0;
+//		AtomicBoolean anaEqual = new AtomicBoolean(false);
+//		Vector<Boolean> vecBool = new Vector<Boolean>();
+
+
+//		for (int i = 0; i < vecvec.size(); i++) {
+//			int keyNotEqualCol = 0;
+//			int totalCol = 0;
+//			for (int j = 0; j < vecvec.get(i).size(); j++) {
+//				if (vecvec.get(i).get(0) == strTableName) {
+//					totalCol++;
+//					if (htblColNameValue.containsKey(vecvec.get(i).get(1))) {
+//						keyNotEqualCol++;
+//					}
+//				}
+//			}
+//			if (totalCol != keyNotEqualCol) {
+//				throw new DBAppException();
+//			}
 //		}
+
+//		htblColNameValue.forEach((k,v) -> {
+////			keyNotEqualCol.set(0);
+////			totalCol.set(0);
+//			if (!anaEqual)
+//			for (int i = 0; i < vecvec.size(); i++) {
+//				if (Objects.equals(vecvec.get(i).get(0), strTableName)) {
+//					totalCol.getAndIncrement();
+//					if (Objects.equals(k, vecvec.get(i).get(1))) {
+//						anaEqual.set(true);
+//					}
+//				}
+//			}
+//		});
+
+		// total: 1
+
+
+
 
 		if(table.rows.isEmpty()) {
 			Page page = new Page(Integer.parseInt(MaximumRowsCountinTablePage));
@@ -149,21 +267,15 @@ public class DBApp {
 			page.tuples.add(htblColNameValue);
 			String fileName = strTableName+"/"+getAlphaNumericString();
 			fileName+=".class";
-
 			serialize(page, fileName);
 			table.serializedFilesName.add(fileName);
-//			String fileName = strTableName + "page" + 0 + ".class";
-//			serialize(page, fileName);
 			serializeTable(table, table.getName()+".class");
 			return;
 		}
 
-
-
 		String pk = table.getPK();
 		boolean test = false;
 
-		//for the case that the insertion is the largest in the table
 		int maxPage = table.rows.size()-1;
 		String f = table.serializedFilesName.get(maxPage);
 
@@ -191,122 +303,86 @@ public class DBApp {
 		}
 
 		for(int j = 0;j<table.rows.size();j++ ) {
-
 			String fil = table.serializedFilesName.get(j);
 			Page p = deserialize(fil);
-
-
-			//Page p = deserialize(strTableName + "page" + j + ".class");
-//			Page p = table.rows.get(j);
 			int count = 0;
-//			if(p.tuples.isEmpty()) {
-//				p.tuples.insertElementAt(htblColNameValue, 0);
-//			}
 			int start = 0;
 			int end = p.tuples.size() - 1;
-			while(start <= end) {
+			while (start <= end) {
 				int mid = (start + end) / 2;
-				Hashtable<String,Object> tuple = p.tuples.get(mid);
+				Hashtable<String, Object> tuple = p.tuples.get(mid);
 				if (tuple.get(pk).toString().compareTo(htblColNameValue.get(pk).toString()) < 0) {
 					start = mid + 1;
-				}
-				else if (tuple.get(pk).toString().compareTo(htblColNameValue.get(pk).toString()) == 0) {
+				} else if (tuple.get(pk).toString().compareTo(htblColNameValue.get(pk).toString()) == 0) {
 					throw new DBAppException();
-				}
-				else {
-					if(j==0) {
+				} else {
+					if (j == 0) {
 						p.tuples.insertElementAt(htblColNameValue, mid);
 						serialize(p, fil);///////////////////////////////////////
-						serializeTable(table, table.getName()+".class");
+						serializeTable(table, table.getName() + ".class");
 						redistributeIns(table);
 						test = true;
 						break;
-					}
-					else {
+					} else {
 //						int w = newCount-1;//////////////////////////////////////////////////////////////////////////////////
-						String fi = table.serializedFilesName.get(j-1);
+						String fi = table.serializedFilesName.get(j - 1);
 						Page beforeMe = deserialize(fi);
-						if(beforeMe.tuples.size() < Integer.parseInt(MaximumRowsCountinTablePage)) {
+						if (beforeMe.tuples.size() < Integer.parseInt(MaximumRowsCountinTablePage)) {
 							beforeMe.tuples.add(htblColNameValue);
 							serialize(beforeMe, fi);
-							serializeTable(table, table.getName()+".class");
+							serializeTable(table, table.getName() + ".class");
 							test = true;
 							break;
-						}
-						else {
+						} else {
 							p.tuples.insertElementAt(htblColNameValue, mid);
 							serialize(p, fil);///////////////////////////////////////////////
-							serializeTable(table, table.getName()+".class");
+							serializeTable(table, table.getName() + ".class");
 							redistributeIns(table);
 							test = true;
 							break;
 						}
 
 					}
-					//end = mid - 1;
 				}
 			}
-//			for(int i = 0;i < p.tuples.size();i++) {
-//				Hashtable<String,Object> tuple = p.tuples.get(i);
-//				if(tuple.get(pk).toString().compareTo(htblColNameValue.get(pk).toString()) > 0) {
-//					if(j==0) {
-//						p.tuples.insertElementAt(htblColNameValue, i);
-//						serialize(p, strTableName+"page"+j+".class");
-//						redistributeIns(table);
-//						test = true;
-//						break;
-//					}
-//					else {
-//						int w = j-1;
-//						Page ably = deserialize(strTableName + "page" + w + ".class");
-//						if(ably.tuples.size() < Integer.parseInt(MaximumRowsCountinTablePage)) {
-//							ably.tuples.add(htblColNameValue);
-//							serialize(ably, strTableName + "page" + w + ".class");
-//							System.out.println("hi");
-//							test = true;
-//							break;
-//						}
-//						else {
-//							p.tuples.insertElementAt(htblColNameValue, i);
-//							serialize(p, strTableName+"page"+j+".class");
-//							redistributeIns(table);
-//							test = true;
-//							break;
-//						}
-//
-//					}
-//
-//				}
-//				count ++;
-//			}
-			if(test) {break;}
-//			for(Hashtable<String,Object> tuple : p.tuples) {
-//
-//				if(tuple.get(pk).toString().compareTo(htblColNameValue.get(pk).toString()) > 0) {
-//					p.tuples.insertElementAt(htblColNameValue, count);
-//					redistributeIns(table);
-//				}
-//				count ++;
-//			}
+			if (test) {
+				break;
+			}
 		}
+	}
 
-//		Hashtable<Integer,Integer > eachPageSizeAfter = new Hashtable<Integer, Integer>();
-//		for(int x2 = 0;x2<table.rows.size();x2++) {
-//			eachPageSizeAfter.put(x2, table.rows.get(x2).tuples.size());
-//		}
-//
-//		if(eachPageSizeBefore.equals(eachPageSizeAfter)) {
-//			if(table.rows.get(table.rows.size()-1).tuples.size() == Integer.parseInt(MaximumRowsCountinTablePage)) {
-//				Page page = new Page(Integer.parseInt(MaximumRowsCountinTablePage));
-//				page.tuples.add(htblColNameValue);
-//				table.rows.add(page);
-//			}
-//			else {
-//				table.rows.get(table.rows.size()-1).tuples.add(htblColNameValue);
-//			}
-//		}
+	private boolean checkcallname(String strTableName, Hashtable<String, Object> htblColNameValue) throws IOException {
+		boolean check=false;
+		Vector<Vector<String>> vecvec = readCSV();
+		int i =0;
+
+		String[] colname = new String[htblColNameValue.keySet().toArray().length];
+		for (int j = 0; j < htblColNameValue.keySet().toArray().length; j++) {
+			colname[j] = (String) htblColNameValue.keySet().toArray()[j];
+			//System.out.println((String) htblColNameValue.keySet().toArray()[j]);
+		}
+//		String[] colname = (String[]) htblColNameValue.keySet().toArray();
+
+		for (int j = 0; j < colname.length; j++) {
+			check=false;
+			String current=colname[j];
+			for (int k = 0; k < vecvec.size() ; k++) {
+
+				if(strTableName.equals(vecvec.get(k).get(0))){
+					if(current.equals(vecvec.get(k).get(1))){
+						check=true;
+						break;
+					}
+
+				}
+			}
+			if(!check)
+				return false;
+		}
+		return true;
 
 	}
+
 
 	public void redistributeIns(Table table) {
 		boolean findPage = false;
@@ -538,26 +614,21 @@ public class DBApp {
 				});
 				if(countKeys.get() == htblColNameValue.size()){
 					p.tuples.remove(j);
+					j--;
 					if(p.tuples.isEmpty()) {
 						table.rows.remove(i);
 						table.serializedFilesName.remove(i);
-						File fe = files.get(f);///////////////////////////////
+						File fe = new File(f);
 						fe.delete();
 					}
 					else {
 						serialize(p, f);
 					}
-
-
 					serializeTable(table, table.getName()+".class");
-
 				}
 			}
 		}
-
-
 	}
-
 
 	public static void main(String[] args) throws IOException, DBAppException {
 		String strTableName = "Student";
@@ -568,13 +639,29 @@ public class DBApp {
 		htblColNameType.put("id", "java.lang.Integer");
 		htblColNameType.put("name", "java.lang.String");
 		htblColNameType.put("gpa", "java.lang.double");
-		//dbApp.createTable( strTableName, "id", htblColNameType, htblColNameMin, htblColNameMax);
-//
-//		Hashtable htblColNameValue5 = new Hashtable( );
-//		htblColNameValue5.put("id", new Integer( 2343429 ));
-//		htblColNameValue5.put("name", new String("zoz" ) );
-//		htblColNameValue5.put("gpa", new Double( 0.95 ) );
-//		dbApp.insertIntoTable( strTableName , htblColNameValue5 );
+		htblColNameMin.put("id", "0");
+		htblColNameMax.put("id", "100");
+		dbApp.createTable( strTableName, "id", htblColNameType, htblColNameMin, htblColNameMax);
+
+
+		String strTableName1 = "Alooo";
+		Hashtable htblColNameType1 = new Hashtable( );
+		Hashtable htblColNameMin1 = new Hashtable( );
+		Hashtable htblColNameMax1 = new Hashtable( );
+		htblColNameType1.put("id1", "java.lang.Integer");
+		htblColNameType1.put("name1", "java.lang.String");
+		htblColNameType1.put("gpa1", "java.lang.double");
+		htblColNameMin1.put("id1", "0");
+		htblColNameMax1.put("id1", "100");
+		dbApp.createTable( strTableName1, "id1", htblColNameType1, htblColNameMin1, htblColNameMax1);
+
+		readCSV();
+
+		Hashtable htblColNameValue5 = new Hashtable( );
+		htblColNameValue5.put("id", new Integer( 2343429 ));
+		htblColNameValue5.put("name", new String("zoz" ) );
+		htblColNameValue5.put("gpa", new Double( 0.95 ) );
+		dbApp.insertIntoTable( strTableName , htblColNameValue5 );
 //
 //		Hashtable htblColNameValue = new Hashtable( );
 //		htblColNameValue.put("id", new Integer( 2343432 ));
@@ -656,7 +743,7 @@ public class DBApp {
 
 
 		Table t = dbApp.deserializeTable(strTableName+".class");
-		System.out.println(t.rows.size());
+//		System.out.println(t.rows.size());
 		for(int i = 0;i < t.rows.size();i++) {
 
 			String f = t.serializedFilesName.get(i);
@@ -664,11 +751,11 @@ public class DBApp {
 			//Page p = t.rows.get(i);
 			for(int j = 0;j<p.tuples.size();j++) {
 				Hashtable<String,Object> h = p.tuples.get(j);
-				System.out.println(h);
+//				System.out.println(h);
 			}
-			System.out.println();
+//			System.out.println();
 		}
-		System.out.println();
+//		System.out.println();
 	}
 
 
