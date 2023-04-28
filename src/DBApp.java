@@ -209,8 +209,12 @@ public class DBApp {
 		Table table = deserializeTable(strTableName+".class");
 //		Vector<Vector<String>> vecvec = readCSV();
 		boolean check = checkcallname(strTableName,htblColNameValue);
+		boolean check1 = checkDataType(strTableName, htblColNameValue);
 
 		if (!check) {
+			throw new DBAppException();
+		}
+		if (!check1) {
 			throw new DBAppException();
 		}
 
@@ -349,6 +353,54 @@ public class DBApp {
 				break;
 			}
 		}
+	}
+
+	private boolean checkDataType(String strTableName, Hashtable<String, Object> htblColNameValue) throws IOException {
+		boolean check=false;
+		Vector<Vector<String>> vecvec = readCSV();
+		String[] colname = new String[htblColNameValue.keySet().toArray().length];
+		for (int j = 0; j < htblColNameValue.keySet().toArray().length; j++) {
+			colname[j] = (String) htblColNameValue.keySet().toArray()[j];
+			//System.out.println((String) htblColNameValue.keySet().toArray()[j]);
+		}
+//		String[] colname = (String[]) htblColNameValue.keySet().toArray();
+
+		for (int j = 0; j < colname.length; j++) {
+			check=false;
+			String current=colname[j];
+			Object value = htblColNameValue.get(current);
+			for (int k = 0; k < vecvec.size() ; k++) {
+				if(strTableName.equals(vecvec.get(k).get(0))){
+					if(current.equals(vecvec.get(k).get(1))){
+						switch (vecvec.get(k).get(2)) {
+							case "java.lang.double" :
+								if(!(value instanceof Double))
+									return false;
+								break;
+							case "java.lang.String":
+								if(!(value instanceof String))
+									return false;
+								break;
+							case "java.lang.Integer":
+								if(!(value instanceof Integer))
+									return false;
+								break;
+							case "java.util.Date":
+								if(!(value instanceof  java.util.Date))
+									return false;
+								break;
+							default:
+								break;
+						}
+						//break;
+					}
+
+				}
+			}
+//			if(!check)
+//				return false;
+		}
+		return true;
 	}
 
 	private boolean checkcallname(String strTableName, Hashtable<String, Object> htblColNameValue) throws IOException {
@@ -659,7 +711,7 @@ public class DBApp {
 
 		Hashtable htblColNameValue5 = new Hashtable( );
 		htblColNameValue5.put("id", new Integer( 2343429 ));
-		htblColNameValue5.put("name", new String("zoz" ) );
+		htblColNameValue5.put("name", true );
 		htblColNameValue5.put("gpa", new Double( 0.95 ) );
 		dbApp.insertIntoTable( strTableName , htblColNameValue5 );
 //

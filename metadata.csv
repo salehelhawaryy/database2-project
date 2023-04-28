@@ -5,3 +5,17 @@ Student,id,java.lang.Integer,true,null,null,0,100
 Alooo,gpa1,java.lang.double,false,null,null,null,null
 Alooo,id1,java.lang.Integer,true,null,null,0,100
 Alooo,name1,java.lang.String,true,null,null,null,null
+Table Name,Column Name,Column Type,Clusterkey,IndexName,IndexType,min,max
+Student,gpa,java.lang.double,false,null,null,null,null
+Student,name,java.lang.String,false,null,null,null,null
+Student,id,java.lang.Integer,true,null,null,0,100
+Alooo,gpa1,java.lang.double,false,null,null,null,null
+Alooo,id1,java.lang.Integer,true,null,null,0,100
+Alooo,name1,java.lang.String,true,null,null,null,null
+Table Name,Column Name,Column Type,Clusterkey,IndexName,IndexType,min,max
+Student,gpa,java.lang.double,false,null,null,null,null
+Student,name,java.lang.String,false,null,null,null,null
+Student,id,java.lang.Integer,true,null,null,0,100
+Alooo,gpa1,java.lang.double,false,null,null,null,null
+Alooo,id1,java.lang.Integer,true,null,null,0,100
+Alooo,name1,java.lang.String,true,null,null,null,null
