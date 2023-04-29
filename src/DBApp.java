@@ -12,38 +12,69 @@ public class DBApp {
 	Hashtable<String, File> files;
 	String MaximumRowsCountinTablePage;
 	String MaximumEntriesinOctreeNode;
-	public DBApp() throws IOException {
+	public DBApp() throws DBAppException {
 		tables = new Vector<Table>();
 		files = new Hashtable<String, File>();
 		File f =new File("resources/DBApp.config");
-		FileInputStream fis = new FileInputStream(f);
+		FileInputStream fis = null;
+		try {
+			fis = new FileInputStream(f);
+		} catch (FileNotFoundException e) {
+			throw new DBAppException();
+		}
 		Properties p = new Properties();
-		p.load(fis);
-		 MaximumRowsCountinTablePage = p.getProperty("MaximumRowsCountinTablePage");
+		try {
+			p.load(fis);
+		} catch (IOException e) {
+			throw new DBAppException();
+		}
+		MaximumRowsCountinTablePage = p.getProperty("MaximumRowsCountinTablePage");
 		 MaximumEntriesinOctreeNode = p.getProperty("MaximumEntriesinOctreeNode");
 	}
 	public void init( ){
 
 	}
 
-	public static Vector<Vector<String>> readCSV() throws IOException {
-		BufferedReader br = new BufferedReader(new FileReader("metadata.csv"));
-		String line = br.readLine();
+	public static Vector<Vector<String>> readCSV() throws DBAppException {
+		BufferedReader br = null;
+		try {
+			br = new BufferedReader(new FileReader("metadata.csv"));
+		} catch (FileNotFoundException e) {
+			throw new DBAppException();
+		}
+		String line = null;
+		try {
+			line = br.readLine();
+		} catch (IOException e) {
+			throw new DBAppException();
+		}
 		Vector<Vector<String>> vecvec = new Vector<>();
 		int c = 0;
 		while (line != null) {
 			String[] content = line.split(",");
 			if (c == 0) {
 				c++;
-				line = br.readLine();
+				try {
+					line = br.readLine();
+				} catch (IOException e) {
+					throw new DBAppException();
+				}
 				continue;
 			}
 			Vector<String> vec = new Vector<>(Arrays.asList(content));
 			vecvec.add(vec);
 
-			line = br.readLine();
+			try {
+				line = br.readLine();
+			} catch (IOException e) {
+				throw new DBAppException();
+			}
 		}
-		br.close();
+		try {
+			br.close();
+		} catch (IOException e) {
+			throw new DBAppException();
+		}
 		return vecvec;
 	}
 
@@ -75,7 +106,18 @@ public class DBApp {
 	}
 
 	public void createTable(String strTableName,String strClusteringKeyColumn, Hashtable<String,String> htblColNameType,
-		Hashtable<String, String> htblColNameMin,Hashtable<String,String> htblColNameMax) throws DBAppException, IOException {
+		Hashtable<String, String> htblColNameMin,Hashtable<String,String> htblColNameMax) throws DBAppException {
+
+		for (Map.Entry<String, String> entry : htblColNameType.entrySet()) {
+			String k = entry.getKey();
+			String v = entry.getValue();
+			if (v.toLowerCase().compareTo("java.lang.double") != 0 && v.toLowerCase().compareTo("java.lang.integer") != 0 &&
+					v.toLowerCase().compareTo("java.lang.string") != 0 && v.toLowerCase().compareTo("java.util.date") != 0) {
+				throw new DBAppException();
+			}
+		}
+
+
 		String Colname;
 		String Coltype;
 		String Clusterkey="false";
@@ -89,7 +131,12 @@ public class DBApp {
 
 		Enumeration<String> enu = htblColNameType.keys();
 
-		PrintWriter pw = new PrintWriter(new FileWriter("metadata.csv", true));
+		PrintWriter pw = null;
+		try {
+			pw = new PrintWriter(new FileWriter("metadata.csv", true));
+		} catch (IOException e) {
+			throw new DBAppException();
+		}
 		StringBuilder sb = new StringBuilder();
 
 		if (!ranOnce) {
@@ -142,7 +189,7 @@ public class DBApp {
 		pw.close();
 	}
 
-	public void serialize(Page p, String fileName) {
+	public void serialize(Page p, String fileName) throws DBAppException {
 		try {
 			File f = new File(fileName);
 			files.put(fileName, f);
@@ -152,11 +199,11 @@ public class DBApp {
 			objectOutputStream.close();
 			fileOutputStream.close();
 		} catch (IOException e) {
-			e.printStackTrace();
+			throw new DBAppException();
 		}
 	}
 
-	public Page deserialize(String fileName){
+	public Page deserialize(String fileName) throws DBAppException {
 		Page p = null;
 		try {
 			FileInputStream fileInputStream = new FileInputStream(fileName);
@@ -165,14 +212,14 @@ public class DBApp {
 			objectInputStream.close();
 			fileInputStream.close();
 		} catch (IOException e) {
-			e.printStackTrace();
+			throw new DBAppException();
 		} catch (ClassNotFoundException e) {
-			e.printStackTrace();
+			throw new DBAppException();
 		}
 		return p;
 	}
 
-	public void serializeTable(Table p, String fileName) {
+	public void serializeTable(Table p, String fileName) throws DBAppException {
 		try {
 			File f = new File(fileName);
 			files.put(fileName, f);
@@ -182,7 +229,7 @@ public class DBApp {
 			objectOutputStream.close();
 			fileOutputStream.close();
 		} catch (IOException e) {
-			e.printStackTrace();
+			throw new DBAppException();
 		}
 	}
 
@@ -194,19 +241,22 @@ public class DBApp {
 			p = (Table) objectInputStream.readObject();
 			objectInputStream.close();
 			fileInputStream.close();
-		} catch (IOException e) {
+		} catch (IOException | ClassNotFoundException e) {
 			throw new DBAppException();
-		} catch (ClassNotFoundException e) {
-			e.printStackTrace();
 		}
 		return p;
 	}
 
 	public void insertIntoTable(String strTableName,
 								Hashtable<String,Object> htblColNameValue)
-			throws DBAppException, IOException {
+			throws DBAppException {
+
+
 
 		Table table = deserializeTable(strTableName+".class");
+
+
+
 //		Vector<Vector<String>> vecvec = readCSV();
 		boolean check = checkcallname(strTableName,htblColNameValue);
 		boolean check1 = checkDataType(strTableName, htblColNameValue);
@@ -218,6 +268,19 @@ public class DBApp {
 			throw new DBAppException();
 		}
 
+		if(!htblColNameValue.containsKey(table.getPK())) {
+			throw new DBAppException();
+		}
+
+		table.colNameType.forEach((k,v)->{
+			if(!htblColNameValue.containsKey(k)) {
+				String w = "null";
+				htblColNameValue.put(k, w);
+			}
+		});
+
+
+
 		if(table.rows.isEmpty()) {
 			Page page = new Page(Integer.parseInt(MaximumRowsCountinTablePage));
 			table.rows.add(page);
@@ -227,6 +290,8 @@ public class DBApp {
 			serialize(page, fileName);
 			table.serializedFilesName.add(fileName);
 			serializeTable(table, table.getName()+".class");
+			page = null;
+			System.gc();
 			return;
 		}
 
@@ -249,15 +314,22 @@ public class DBApp {
 				serialize(page, fileName);
 				table.serializedFilesName.add(fileName);
 				serializeTable(table, table.getName()+".class");
+				page = null;
+				max = null;
+				System.gc();
 				return;
 			}
 			else {
 				max.tuples.add(htblColNameValue);
 				serialize(max, f);////////////////////////////////////////////////////
 				serializeTable(table, table.getName()+".class");
+				max = null;
+				System.gc();
 				return;
 			}
 		}
+		max = null;
+		System.gc();
 
 		for(int j = 0;j<table.rows.size();j++ ) {
 			String fil = table.serializedFilesName.get(j);
@@ -265,18 +337,20 @@ public class DBApp {
 			int count = 0;
 			int start = 0;
 			int end = p.tuples.size() - 1;
-			while (start <= end) {
+			for (int i = 0;i<p.tuples.size();i++){
 				int mid = (start + end) / 2;
-				Hashtable<String, Object> tuple = p.tuples.get(mid);
+				Hashtable<String, Object> tuple = p.tuples.get(i);
 				if (tuple.get(pk).toString().compareTo(htblColNameValue.get(pk).toString()) < 0) {
 					start = mid + 1;
 				} else if (tuple.get(pk).toString().compareTo(htblColNameValue.get(pk).toString()) == 0) {
 					throw new DBAppException();
 				} else {
 					if (j == 0) {
-						p.tuples.insertElementAt(htblColNameValue, mid);
+						p.tuples.insertElementAt(htblColNameValue, i);
 						serialize(p, fil);///////////////////////////////////////
 						serializeTable(table, table.getName() + ".class");
+						p = null;
+						System.gc();
 						redistributeIns(table);
 						test = true;
 						break;
@@ -289,13 +363,18 @@ public class DBApp {
 							serialize(beforeMe, fi);
 							serializeTable(table, table.getName() + ".class");
 							test = true;
+							p = null;
+							beforeMe = null;
+							System.gc();
 							break;
 						} else {
-							p.tuples.insertElementAt(htblColNameValue, mid);
+							p.tuples.insertElementAt(htblColNameValue, i);
 							serialize(p, fil);///////////////////////////////////////////////
 							serializeTable(table, table.getName() + ".class");
 							redistributeIns(table);
 							test = true;
+							p = null;
+							System.gc();
 							break;
 						}
 
@@ -305,43 +384,13 @@ public class DBApp {
 			if (test) {
 				break;
 			}
+			p = null;
+			System.gc();
 		}
 	}
 
-//	private boolean checkMinMax(String strTableName, Hashtable<String, Object> htblColNameValue) throws IOException {
-//		Vector<Vector<String>> vecvec = readCSV();
-//		String[] colname = new String[htblColNameValue.keySet().toArray().length];
-//		for (int j = 0; j < htblColNameValue.keySet().toArray().length; j++) {
-//			colname[j] = (String) htblColNameValue.keySet().toArray()[j];
-//		}
-//
-//		for (int j = 0; j < colname.length; j++) {
-//			String current=colname[j];
-//			Object value = htblColNameValue.get(current);
-//			for (int k = 0; k < vecvec.size() ; k++) {
-//				if(strTableName.equals(vecvec.get(k).get(0))){
-//					if(current.equals(vecvec.get(k).get(1))){
-//						String min = vecvec.get(k).get(3);
-//						if(vecvec.get(k).get(6) == "null" || vecvec.get(k).get(7) == "null") {
-//
-//						}
-//						else if((vecvec.get(k).get(6).compareTo(value.toString()) > 0) || vecvec.get(k).get(7).compareTo(value.toString()) < 0) {
-//							System.out.println(value.toString()+" "+vecvec.get(k).get(7)+" "+min);
-//							return false;
-//						}
-//
-//					}
-//
-//				}
-//			}
-////			if(!check)
-////				return false;
-//		}
-//
-//		return true;
-//	}
 
-	private boolean checkDataType(String strTableName, Hashtable<String, Object> htblColNameValue) throws IOException {
+	private boolean checkDataType(String strTableName, Hashtable<String, Object> htblColNameValue) throws DBAppException {
 		boolean check=false;
 		Vector<Vector<String>> vecvec = readCSV();
 		String[] colname = new String[htblColNameValue.keySet().toArray().length];
@@ -358,7 +407,7 @@ public class DBApp {
 			for (int k = 0; k < vecvec.size() ; k++) {
 				if(strTableName.equals(vecvec.get(k).get(0))){
 					if(current.equals(vecvec.get(k).get(1))){
-						switch (vecvec.get(k).get(2)) {
+						switch (vecvec.get(k).get(2).toLowerCase()) {
 							case "java.lang.double" :
 								if(!(value instanceof Double))
 									return false;
@@ -366,21 +415,25 @@ public class DBApp {
 									return false;
 								}
 								break;
-							case "java.lang.String":
+							case "java.lang.string":
 								if(!(value instanceof String))
 									return false;
-								if((vecvec.get(k).get(6).compareTo(value.toString()) > 0) || vecvec.get(k).get(7).compareTo(value.toString()) < 0) {
+								if((vecvec.get(k).get(6).compareTo(value.toString().toLowerCase()) > 0) || vecvec.get(k).get(7).compareTo(value.toString().toLowerCase()) < 0) {
+									System.out.println("Min:"+vecvec.get(k).get(6));
+									System.out.println("Max:"+vecvec.get(k).get(7));
+									System.out.println("Value:"+value.toString());
+									System.out.println(" "+ vecvec.get(k).get(7).compareTo(value.toString())+" "+ vecvec.get(k).get(6).compareTo(value.toString()));
 									return false;
 								}
 								break;
-							case "java.lang.Integer":
+							case "java.lang.integer":
 								if(!(value instanceof Integer))
 									return false;
 								if(Integer.parseInt(vecvec.get(k).get(6)) > (Integer.parseInt(value.toString())) || Integer.parseInt(vecvec.get(k).get(7)) < (Integer.parseInt(value.toString()))) {
 								return false;
 								}
 								break;
-							case "java.util.Date":
+							case "java.util.date":
 								if(!(value instanceof  java.util.Date))
 									return false;
 								if((vecvec.get(k).get(6).compareTo(value.toString()) > 0) || vecvec.get(k).get(7).compareTo(value.toString()) < 0) {
@@ -401,7 +454,7 @@ public class DBApp {
 		return true;
 	}
 
-	private boolean checkcallname(String strTableName, Hashtable<String, Object> htblColNameValue) throws IOException {
+	private boolean checkcallname(String strTableName, Hashtable<String, Object> htblColNameValue) throws DBAppException {
 		boolean check=false;
 		Vector<Vector<String>> vecvec = readCSV();
 		int i =0;
@@ -434,8 +487,7 @@ public class DBApp {
 	}
 
 
-	public void redistributeIns(Table table) {
-		boolean findPage = false;
+	public void redistributeIns(Table table) throws DBAppException {
 		for(int i=0;i<table.rows.size();i++)
 		{
 			String f = table.serializedFilesName.get(i);
@@ -465,6 +517,9 @@ public class DBApp {
 					serialize(erase, f);///////////////////////////////////////////////
 					serialize(p, f);//////////////////////////////////////////////////////
 					serializeTable(table, table.getName()+".class");
+					page = null;
+					p = null;
+					System.gc();
 				}
 				else
 				{
@@ -482,18 +537,29 @@ public class DBApp {
 					serialize(p, f);////////////////////////////////////////////////////////////////////
 					serialize(next,fi);
 					serializeTable(table, table.getName()+".class");
+					p = null;
+					next = null;
+					System.gc();
 				}
 			}
+			p = null;
+			System.gc();
 		}
 	}
 
 	public void updateTable(String strTableName,
 							String strClusteringKeyValue,
 							Hashtable<String,Object> htblColNameValue )
-			throws DBAppException, IOException {
+			throws DBAppException {
 
 
 		Table table = deserializeTable(strTableName+".class");
+
+		if(htblColNameValue.containsKey(table.getPK()) || strClusteringKeyValue.isEmpty()) {
+			throw new DBAppException();
+		}
+
+
 
 		boolean check = checkcallname(strTableName,htblColNameValue);
 		boolean check1 = checkDataType(strTableName, htblColNameValue);
@@ -508,6 +574,7 @@ public class DBApp {
 
 		String pk = table.getPK();
 		boolean done = false;
+		boolean updated = false;
 
 		for(int i = 0; i < table.rows.size();i++) {
 			String f = table.serializedFilesName.get(i);
@@ -529,6 +596,7 @@ public class DBApp {
 						htblColNameValue.forEach((k2, v2) ->{
 							if(k.compareTo(k2) == 0) {
 								finalP.tuples.get(finalMid).replace(k, v2);
+
 							}
 						});
 					});
@@ -536,7 +604,11 @@ public class DBApp {
 					serialize(erase, f);///////////////////////////////////////////////////////////////
 					serialize(p, f);//////////////////////////////////////////////////////////////////
 					serializeTable(table, table.getName()+".class");
+
+					p = null;
+					System.gc();
 					done = true;
+					updated = true;
 					break;
 				}
 				else {
@@ -546,10 +618,13 @@ public class DBApp {
 			}
 			if(done) break;
 		}
+		if(!updated) {
+			throw new DBAppException();
+		}
 	}
 
 	public void deleteFromTable(String strTableName,
-								Hashtable<String,Object> htblColNameValue) throws DBAppException, IOException {
+								Hashtable<String,Object> htblColNameValue) throws DBAppException {
 
 
 		Table table = deserializeTable(strTableName + ".class");
@@ -603,6 +678,8 @@ public class DBApp {
 								serialize(p, f);////////////////////////////////////////////////////////
 							}
 							serializeTable(table, table.getName()+".class");
+							p = null;
+							System.gc();
 							return;
 						}
 
@@ -612,6 +689,8 @@ public class DBApp {
 					}
 					mid1 = (first1 + last1)/2;
 				}
+				p = null;
+				System.gc();
 			}
 		}
 
@@ -648,6 +727,8 @@ public class DBApp {
 					serializeTable(table, table.getName()+".class");
 				}
 			}
+			p = null;
+			System.gc();
 		}
 	}
 
@@ -663,34 +744,34 @@ public class DBApp {
 		htblColNameMin.put("id", "0");
 		htblColNameMax.put("id", "100000000");
 		htblColNameMin.put("name", "a");
-		htblColNameMax.put("name", "zzzzzzzzzzzzzzzzzzzzzzzz");
+		htblColNameMax.put("name", "zzzzzzzzzzzzzzzzzzzzzzz");
 		htblColNameMin.put("gpa", "0.0");
 		htblColNameMax.put("gpa", "100.0");
-		dbApp.createTable( strTableName, "id", htblColNameType, htblColNameMin, htblColNameMax);
-
-
-		String strTableName1 = "Alooo";
-		Hashtable htblColNameType1 = new Hashtable( );
-		Hashtable htblColNameMin1 = new Hashtable( );
-		Hashtable htblColNameMax1 = new Hashtable( );
-		htblColNameType1.put("id1", "java.lang.Integer");
-		htblColNameType1.put("name1", "java.lang.String");
-		htblColNameType1.put("gpa1", "java.lang.double");
-		htblColNameMin1.put("id1", "0");
-		htblColNameMax1.put("id1", "100");
-		dbApp.createTable( strTableName1, "id1", htblColNameType1, htblColNameMin1, htblColNameMax1);
-
-
-
-		Hashtable htblColNameValue5 = new Hashtable( );
-		htblColNameValue5.put("id", new Integer( 2343429 ));
-		htblColNameValue5.put("name", new String("zoz") );
-		htblColNameValue5.put("gpa", new Double( 0.95 ) );
-		dbApp.insertIntoTable( strTableName , htblColNameValue5 );
-//
+//		dbApp.createTable( strTableName, "id", htblColNameType, htblColNameMin, htblColNameMax);
+////
+////
+////		String strTableName1 = "Alooo";
+////		Hashtable htblColNameType1 = new Hashtable( );
+////		Hashtable htblColNameMin1 = new Hashtable( );
+////		Hashtable htblColNameMax1 = new Hashtable( );
+////		htblColNameType1.put("id1", "java.lang.Integer");
+////		htblColNameType1.put("name1", "java.lang.String");
+////		htblColNameType1.put("gpa1", "java.lang.double");
+////		htblColNameMin1.put("id1", "0");
+////		htblColNameMax1.put("id1", "100");
+////		dbApp.createTable( strTableName1, "id1", htblColNameType1, htblColNameMin1, htblColNameMax1);
+////
+////
+////
+//		Hashtable htblColNameValue5 = new Hashtable( );
+//		htblColNameValue5.put("id", new Integer( 2343429 ));
+//		htblColNameValue5.put("name", new String("zoz") );
+//		htblColNameValue5.put("gpa", new Double( 0.95 ) );
+//		dbApp.insertIntoTable( strTableName , htblColNameValue5 );
+////
 //		Hashtable htblColNameValue = new Hashtable( );
 //		htblColNameValue.put("id", new Integer( 2343432 ));
-//		htblColNameValue.put("name", new String("Ahmed Noor" ) );
+//		htblColNameValue.put("name", new String("ahmed noor" ) );
 //		htblColNameValue.put("gpa", new Double( 0.95 ) );
 //		dbApp.insertIntoTable( strTableName , htblColNameValue );
 //
@@ -699,25 +780,26 @@ public class DBApp {
 //		htblColNameValue1.put("name", new String("youssef" ) );
 //		htblColNameValue1.put("gpa", new Double( 0.95 ) );
 //		dbApp.insertIntoTable( strTableName , htblColNameValue1 );
-//
+////
 //		Hashtable htblColNameValue2 = new Hashtable( );
-//		htblColNameValue2.put("id", new Integer( 2343431 ));
+//		htblColNameValue2.put("id", new Integer( 2343428 ));
 //		htblColNameValue2.put("name", new String("Ahmed" ) );
 //		htblColNameValue2.put("gpa", new Double( 0.95 ) );
 //		dbApp.insertIntoTable( strTableName , htblColNameValue2 );
 //
 //		Hashtable htblColNameValue3 = new Hashtable( );
-//		htblColNameValue3.put("id", new Integer( 2343430 ));
+//		htblColNameValue3.put("id", new Integer( 2343434 ));
 //		htblColNameValue3.put("name", new String("mohamed" ) );
 //		htblColNameValue3.put("gpa", new Double( 0.95 ) );
 //		dbApp.insertIntoTable( strTableName , htblColNameValue3 );
 
+
 //
 //
 //		Hashtable htblColNameVal = new Hashtable( );
-//		htblColNameVal.put("id", new Integer( 2343431 ));
-//		htblColNameVal.put("name", new String("Ahmed" ) );
-//		htblColNameVal.put("gpa", new Double( 0.95 ) );
+////		htblColNameVal.put("id", new Integer( 2343428 ));
+////		htblColNameVal.put("name", new String("Ahmed" ) );
+//		htblColNameVal.put("gpa", new Double( 55.0 ) );
 //		dbApp.deleteFromTable( strTableName , htblColNameVal );
 ////
 //////		Hashtable htblColNameValue32 = new Hashtable( );
@@ -727,9 +809,9 @@ public class DBApp {
 //////		dbApp.insertIntoTable( strTableName , htblColNameValue32 );
 //////
 //		Hashtable htblColNameVa = new Hashtable( );
-//		htblColNameVa.put("id", new Integer( 2343432 ));
-////		htblColNameVa.put("name", new String("test was ahmed noor" ) );
-////		htblColNameVa.put("gpa", new Double( 0.95 ) );
+////		htblColNameVa.put("id", new Integer( 2343432 ));
+//////		htblColNameVa.put("name", new String("test was ahmed noor" ) );
+//		htblColNameVa.put("gpa", new Double( 0.95 ) );
 //		dbApp.deleteFromTable( strTableName , htblColNameVa );
 //
 //
@@ -742,18 +824,18 @@ public class DBApp {
 ////
 //		Hashtable update = new Hashtable( );
 //		update.put("name", new String("test was Ahmed" ) );
-//		update.put("gpa", new Double(2.0) );
-//		dbApp.updateTable(strTableName, "2343431", update);
-////
+//		update.put("gpa", new Double(55.0) );
+//		dbApp.updateTable(strTableName, "2343429", update);
+//
 //		Hashtable htblColNameValu = new Hashtable( );
 //		htblColNameValu.put("name", new String("test was ahmed noor" ) );
 //		htblColNameValu.put("gpa", new Double(2.0 ) );
 //		dbApp.deleteFromTable( strTableName , htblColNameValu );
 ////
 //		Hashtable htblColNameV = new Hashtable( );
-//		htblColNameV.put("name", new String("Ahmed" ) );
+//		htblColNameV.put("gpa", new Double(0.95 ) );
 //		dbApp.deleteFromTable( strTableName , htblColNameV );
-//
+////
 //		Hashtable htblColNameValue4 = new Hashtable( );
 //		htblColNameValue4.put("id", new Integer( 2343434 ));
 //		htblColNameValue4.put("name", new String("zizooo" ) );
@@ -776,9 +858,9 @@ public class DBApp {
 			//Page p = t.rows.get(i);
 			for(int j = 0;j<p.tuples.size();j++) {
 				Hashtable<String,Object> h = p.tuples.get(j);
-//				System.out.println(h);
+				System.out.println(h);
 			}
-//			System.out.println();
+			System.out.println();
 		}
 //		System.out.println();
 	}
