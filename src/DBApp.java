@@ -218,53 +218,6 @@ public class DBApp {
 			throw new DBAppException();
 		}
 
-//		for (int i = 0; i < vecvec.size(); i++) {
-//			for (int j = 0; j < vecvec.get(i).size(); j++) {
-//				System.out.println(vecvec.get(i).get(j));
-//			}
-//		}
-
-//		int keyNotEqualCol = 0;
-//		int totalCol = 0;
-//		AtomicBoolean anaEqual = new AtomicBoolean(false);
-//		Vector<Boolean> vecBool = new Vector<Boolean>();
-
-
-//		for (int i = 0; i < vecvec.size(); i++) {
-//			int keyNotEqualCol = 0;
-//			int totalCol = 0;
-//			for (int j = 0; j < vecvec.get(i).size(); j++) {
-//				if (vecvec.get(i).get(0) == strTableName) {
-//					totalCol++;
-//					if (htblColNameValue.containsKey(vecvec.get(i).get(1))) {
-//						keyNotEqualCol++;
-//					}
-//				}
-//			}
-//			if (totalCol != keyNotEqualCol) {
-//				throw new DBAppException();
-//			}
-//		}
-
-//		htblColNameValue.forEach((k,v) -> {
-////			keyNotEqualCol.set(0);
-////			totalCol.set(0);
-//			if (!anaEqual)
-//			for (int i = 0; i < vecvec.size(); i++) {
-//				if (Objects.equals(vecvec.get(i).get(0), strTableName)) {
-//					totalCol.getAndIncrement();
-//					if (Objects.equals(k, vecvec.get(i).get(1))) {
-//						anaEqual.set(true);
-//					}
-//				}
-//			}
-//		});
-
-		// total: 1
-
-
-
-
 		if(table.rows.isEmpty()) {
 			Page page = new Page(Integer.parseInt(MaximumRowsCountinTablePage));
 			table.rows.add(page);
@@ -355,6 +308,39 @@ public class DBApp {
 		}
 	}
 
+//	private boolean checkMinMax(String strTableName, Hashtable<String, Object> htblColNameValue) throws IOException {
+//		Vector<Vector<String>> vecvec = readCSV();
+//		String[] colname = new String[htblColNameValue.keySet().toArray().length];
+//		for (int j = 0; j < htblColNameValue.keySet().toArray().length; j++) {
+//			colname[j] = (String) htblColNameValue.keySet().toArray()[j];
+//		}
+//
+//		for (int j = 0; j < colname.length; j++) {
+//			String current=colname[j];
+//			Object value = htblColNameValue.get(current);
+//			for (int k = 0; k < vecvec.size() ; k++) {
+//				if(strTableName.equals(vecvec.get(k).get(0))){
+//					if(current.equals(vecvec.get(k).get(1))){
+//						String min = vecvec.get(k).get(3);
+//						if(vecvec.get(k).get(6) == "null" || vecvec.get(k).get(7) == "null") {
+//
+//						}
+//						else if((vecvec.get(k).get(6).compareTo(value.toString()) > 0) || vecvec.get(k).get(7).compareTo(value.toString()) < 0) {
+//							System.out.println(value.toString()+" "+vecvec.get(k).get(7)+" "+min);
+//							return false;
+//						}
+//
+//					}
+//
+//				}
+//			}
+////			if(!check)
+////				return false;
+//		}
+//
+//		return true;
+//	}
+
 	private boolean checkDataType(String strTableName, Hashtable<String, Object> htblColNameValue) throws IOException {
 		boolean check=false;
 		Vector<Vector<String>> vecvec = readCSV();
@@ -376,18 +362,30 @@ public class DBApp {
 							case "java.lang.double" :
 								if(!(value instanceof Double))
 									return false;
+								if(Double.parseDouble(vecvec.get(k).get(6)) > (Double.parseDouble(value.toString())) || Double.parseDouble(vecvec.get(k).get(7)) < (Double.parseDouble(value.toString()))) {
+									return false;
+								}
 								break;
 							case "java.lang.String":
 								if(!(value instanceof String))
 									return false;
+								if((vecvec.get(k).get(6).compareTo(value.toString()) > 0) || vecvec.get(k).get(7).compareTo(value.toString()) < 0) {
+									return false;
+								}
 								break;
 							case "java.lang.Integer":
 								if(!(value instanceof Integer))
 									return false;
+								if(Integer.parseInt(vecvec.get(k).get(6)) > (Integer.parseInt(value.toString())) || Integer.parseInt(vecvec.get(k).get(7)) < (Integer.parseInt(value.toString()))) {
+								return false;
+								}
 								break;
 							case "java.util.Date":
 								if(!(value instanceof  java.util.Date))
 									return false;
+								if((vecvec.get(k).get(6).compareTo(value.toString()) > 0) || vecvec.get(k).get(7).compareTo(value.toString()) < 0) {
+									return false;
+								}
 								break;
 							default:
 								break;
@@ -492,16 +490,26 @@ public class DBApp {
 	public void updateTable(String strTableName,
 							String strClusteringKeyValue,
 							Hashtable<String,Object> htblColNameValue )
-			throws DBAppException {
+			throws DBAppException, IOException {
 
 
 		Table table = deserializeTable(strTableName+".class");
+
+		boolean check = checkcallname(strTableName,htblColNameValue);
+		boolean check1 = checkDataType(strTableName, htblColNameValue);
+
+		if (!check) {
+			throw new DBAppException();
+		}
+		if (!check1) {
+			throw new DBAppException();
+		}
 
 
 		String pk = table.getPK();
 		boolean done = false;
 
-		for(int i = 0; i < table.rows.size();i++) { //make sure that we use binary search on content of pages not on pages themselves
+		for(int i = 0; i < table.rows.size();i++) {
 			String f = table.serializedFilesName.get(i);
 			Page p = deserialize(f);
 
@@ -541,70 +549,31 @@ public class DBApp {
 	}
 
 	public void deleteFromTable(String strTableName,
-								Hashtable<String,Object> htblColNameValue) throws DBAppException {
-//		Table table = null;
-//		Boolean found = false;
-////		for(int i = 0; i< tables.size(); i++) {
-////
-////			if(tables.get(i).getName().equals(strTableName)) {
-////				found = true;
-////				table = tables.get(i);
-////				break;
-////			}
-////		}
-//		int l = 0, r = tables.size()-1;
-//		while (l <= r) {
-//			int m = l + (r - l) / 2;
-//
-//			//int res = strTableName.compareTo(String.valueOf(tables.get(m).getName().equals(strTableName)));
-//			int res = tables.get(m).getName().compareTo(strTableName);
-//			// Check if x is present at mid
-//			if (res == 0){
-//				found =true;
-//				table =tables.get(m);
-//				break;}
-//			// If x greater, ignore left half
-//			if (res > 0)
-//				l = m + 1;
-//
-//				// If x is smaller, ignore right half
-//			else
-//				r = m - 1;
-//		}
-//		if (!found) {
-//			throw new DBAppException();
-//		}
+								Hashtable<String,Object> htblColNameValue) throws DBAppException, IOException {
+
 
 		Table table = deserializeTable(strTableName + ".class");
+
+		boolean check = checkcallname(strTableName,htblColNameValue);
+		boolean check1 = checkDataType(strTableName, htblColNameValue);
+
+		if (!check) {
+			throw new DBAppException();
+		}
+		if (!check1) {
+			throw new DBAppException();
+		}
 
 		String pk = table.getPK();
 
 		if((htblColNameValue.containsKey(pk))) {
-//			boolean findPage = false;
 
 			for(int i = 0; i < table.rows.size();i++) { //make sure that we use binary search on content of pages not on pages themselves
-//				Page p = null;
-//				int newCount = i;
-//				while(!findPage) {
-//					File f = new File(strTableName + "page" + newCount + ".class");
-//					p = deserialize(strTableName + "page" + newCount + ".class");
-//					if(!p.tuples.isEmpty()) {
-//						findPage = true;
-//
-//						break;
-//					}
-//					newCount++;
-//				}
-//				findPage = false;
+
 
 				String f = table.serializedFilesName.get(i);
 				Page p = deserialize(f);
 
-
-
-
-				// Page p = deserialize(strTableName + "page" + i + ".class");
-				//Page p = table.rows.get(i);
 				int first1 = 0;
 				int last1 = p.tuples.size()-1;
 				int mid1 = (first1 + last1)/2;
@@ -647,7 +616,7 @@ public class DBApp {
 		}
 
 
-		for(int i = 0; i < table.rows.size();i++) { //make sure that we use binary search on content of pages not on pages themselves
+		for(int i = 0; i < table.rows.size();i++) {
 
 			String f = table.serializedFilesName.get(i);
 			Page p = deserialize(f);
@@ -692,7 +661,11 @@ public class DBApp {
 		htblColNameType.put("name", "java.lang.String");
 		htblColNameType.put("gpa", "java.lang.double");
 		htblColNameMin.put("id", "0");
-		htblColNameMax.put("id", "100");
+		htblColNameMax.put("id", "100000000");
+		htblColNameMin.put("name", "a");
+		htblColNameMax.put("name", "zzzzzzzzzzzzzzzzzzzzzzzz");
+		htblColNameMin.put("gpa", "0.0");
+		htblColNameMax.put("gpa", "100.0");
 		dbApp.createTable( strTableName, "id", htblColNameType, htblColNameMin, htblColNameMax);
 
 
@@ -707,11 +680,11 @@ public class DBApp {
 		htblColNameMax1.put("id1", "100");
 		dbApp.createTable( strTableName1, "id1", htblColNameType1, htblColNameMin1, htblColNameMax1);
 
-		readCSV();
+
 
 		Hashtable htblColNameValue5 = new Hashtable( );
 		htblColNameValue5.put("id", new Integer( 2343429 ));
-		htblColNameValue5.put("name", true );
+		htblColNameValue5.put("name", new String("zoz") );
 		htblColNameValue5.put("gpa", new Double( 0.95 ) );
 		dbApp.insertIntoTable( strTableName , htblColNameValue5 );
 //
