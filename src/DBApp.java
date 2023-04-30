@@ -204,7 +204,6 @@ public class DBApp {
 			objectOutputStream.close();
 			fileOutputStream.close();
 		} catch (IOException e) {
-			e.printStackTrace();
 			throw new DBAppException();
 		}
 	}
@@ -234,7 +233,6 @@ public class DBApp {
 			objectOutputStream.close();
 			fileOutputStream.close();
 		} catch (IOException e) {
-			e.printStackTrace();
 			throw new DBAppException();
 		}
 	}
@@ -434,10 +432,6 @@ public class DBApp {
 								if(!(value instanceof String))
 									return false;
 								if((vecvec.get(k).get(6).compareTo(value.toString().toLowerCase()) > 0) || vecvec.get(k).get(7).compareTo(value.toString().toLowerCase()) < 0) {
-									System.out.println("Min:"+vecvec.get(k).get(6));
-									System.out.println("Max:"+vecvec.get(k).get(7));
-									System.out.println("Value:"+value.toString());
-									System.out.println(" "+ vecvec.get(k).get(7).compareTo(value.toString())+" "+ vecvec.get(k).get(6).compareTo(value.toString()));
 									return false;
 								}
 								break;
@@ -451,7 +445,19 @@ public class DBApp {
 							case "java.util.date":
 								if(!(value instanceof  java.util.Date))
 									return false;
-								if((vecvec.get(k).get(6).compareTo(value.toString()) > 0) || vecvec.get(k).get(7).compareTo(value.toString()) < 0) {
+								SimpleDateFormat sdformat = new SimpleDateFormat("yyyy-MM-dd");
+								Date min;
+								Date max;
+								Date val;
+								try {
+									min = sdformat.parse(vecvec.get(k).get(6));
+									max = sdformat.parse(vecvec.get(k).get(7));
+									val = ((Date) value);
+
+								} catch (ParseException e) {
+									throw new DBAppException();
+								}
+								if((min.compareTo(val) > 0) || max.compareTo(val) < 0) {
 									return false;
 								}
 								break;
@@ -616,7 +622,7 @@ public class DBApp {
 				} else if (val instanceof String) {
 					compare = val.toString().compareTo(strClusteringKeyValue);
 				} else {
-					SimpleDateFormat formatter2=new SimpleDateFormat("YYYY-MM-DD");
+					SimpleDateFormat formatter2=new SimpleDateFormat("yyyy-MM-dd");
 					Date strClust;
 					try {
 						strClust = formatter2.parse(strClusteringKeyValue);
