@@ -20,7 +20,7 @@ public class DBApp {
 	}
 
 	public void readConfig() throws DBAppException {
-		File f =new File("resources/DBApp.config");
+		File f =new File("src/resources/DBApp.config");
 		FileInputStream fis = null;
 		try {
 			fis = new FileInputStream(f);
@@ -40,7 +40,7 @@ public class DBApp {
 	public static Vector<Vector<String>> readCSV() throws DBAppException {
 		BufferedReader br = null;
 		try {
-			br = new BufferedReader(new FileReader("resources/"+"metadata.csv"));
+			br = new BufferedReader(new FileReader("src/resources/"+"metadata.csv"));
 		} catch (FileNotFoundException e) {
 			throw new DBAppException();
 		}
@@ -119,7 +119,7 @@ public class DBApp {
 			}
 		}
 
-		File fq = new File("resources/data/"+strTableName+".class");
+		File fq = new File("src/resources/data/"+strTableName+".class");
 		if(fq.exists()) {
 			throw new DBAppException();
 		}
@@ -131,15 +131,15 @@ public class DBApp {
 		String Min;
 		String Max;
 		Table table = new Table(strTableName,strClusteringKeyColumn,htblColNameType,htblColNameMin,htblColNameMax);
-		serializeTable(table, "resources/data/"+strTableName+".class");
-		File f = new File("resources/data/"+strTableName);
+		serializeTable(table, "src/resources/data/"+strTableName+".class");
+		File f = new File("src/resources/data/"+strTableName);
 		f.mkdir();
 
 		Enumeration<String> enu = htblColNameType.keys();
 
 		PrintWriter pw = null;
 		try {
-			pw = new PrintWriter(new FileWriter("resources/"+"metadata.csv", true));
+			pw = new PrintWriter(new FileWriter("src/resources/"+"metadata.csv", true));
 		} catch (IOException e) {
 			throw new DBAppException();
 		}
@@ -257,7 +257,7 @@ public class DBApp {
 
 
 
-		Table table = deserializeTable("resources/data/"+strTableName+".class");
+		Table table = deserializeTable("src/resources/data/"+strTableName+".class");
 
 
 
@@ -289,15 +289,15 @@ public class DBApp {
 			Page page = new Page(Integer.parseInt(MaximumRowsCountinTablePage));
 			table.rows.add(page);
 			page.tuples.add(htblColNameValue);
-			String fileName = "resources/data/"+strTableName+"/"+getAlphaNumericString();
+			String fileName = "src/resources/data/"+strTableName+"/"+getAlphaNumericString();
 			fileName+=".class";
 			while(table.serializedFilesName.contains(fileName)) {
-				fileName = "resources/data/"+strTableName+"/"+getAlphaNumericString();
+				fileName = "src/resources/data/"+strTableName+"/"+getAlphaNumericString();
 				fileName+=".class";
 			}
 			serialize(page, fileName);
 			table.serializedFilesName.add(fileName);
-			serializeTable(table, "resources/data/"+table.getName()+".class");
+			serializeTable(table, "src/resources/data/"+table.getName()+".class");
 			page = null;
 			System.gc();
 			return;
@@ -317,15 +317,15 @@ public class DBApp {
 				page.tuples.add(htblColNameValue);
 				table.rows.add(page);
 				//int num = newCount1 + 1;/////////////////////////////////////////////////////////////////////////////////////////
-				String fileName = "resources/data/"+strTableName+"/"+getAlphaNumericString();
+				String fileName = "src/resources/data/"+strTableName+"/"+getAlphaNumericString();
 				fileName+=".class";
 				while(table.serializedFilesName.contains(fileName)) {
-					fileName = "resources/data/"+strTableName+"/"+getAlphaNumericString();
+					fileName = "src/resources/data/"+strTableName+"/"+getAlphaNumericString();
 					fileName+=".class";
 				}
 				serialize(page, fileName);
 				table.serializedFilesName.add(fileName);
-				serializeTable(table, "resources/data/"+table.getName()+".class");
+				serializeTable(table, "src/resources/data/"+table.getName()+".class");
 				page = null;
 				max = null;
 				System.gc();
@@ -334,7 +334,7 @@ public class DBApp {
 			else {
 				max.tuples.add(htblColNameValue);
 				serialize(max, f);////////////////////////////////////////////////////
-				serializeTable(table, "resources/data/"+table.getName()+".class");
+				serializeTable(table, "src/resources/data/"+table.getName()+".class");
 				max = null;
 				System.gc();
 				return;
@@ -360,7 +360,7 @@ public class DBApp {
 					if (j == 0) {
 						p.tuples.insertElementAt(htblColNameValue, i);
 						serialize(p, fil);///////////////////////////////////////
-						serializeTable(table, "resources/data/"+table.getName() + ".class");
+						serializeTable(table, "src/resources/data/"+table.getName() + ".class");
 						p = null;
 						System.gc();
 						redistributeIns(table);
@@ -374,7 +374,7 @@ public class DBApp {
 						if (beforeMe.tuples.size() < Integer.parseInt(MaximumRowsCountinTablePage)) {
 							beforeMe.tuples.add(htblColNameValue);
 							serialize(beforeMe, fi);
-							serializeTable(table, "resources/data/"+table.getName() + ".class");
+							serializeTable(table, "src/resources/data/"+table.getName() + ".class");
 							test = true;
 							p = null;
 							beforeMe = null;
@@ -383,7 +383,7 @@ public class DBApp {
 						} else {
 							p.tuples.insertElementAt(htblColNameValue, i);
 							serialize(p, fil);///////////////////////////////////////////////
-							serializeTable(table, "resources/data/"+table.getName() + ".class");
+							serializeTable(table, "src/resources/data/"+table.getName() + ".class");
 							redistributeIns(table);
 							test = true;
 							p = null;
@@ -521,10 +521,10 @@ public class DBApp {
 				{
 					Page page = new Page(Integer.parseInt(MaximumRowsCountinTablePage));
 					table.rows.add(page);
-					String fileName = "resources/data/"+table.getName()+"/"+getAlphaNumericString();
+					String fileName = "src/resources/data/"+table.getName()+"/"+getAlphaNumericString();
 					fileName+=".class";
 					while(table.serializedFilesName.contains(fileName)) {
-						fileName = "resources/data/"+table.getName()+"/"+getAlphaNumericString();
+						fileName = "src/resources/data/"+table.getName()+"/"+getAlphaNumericString();
 						fileName+=".class";
 					}
 //					serialize(page, fileName);
@@ -542,7 +542,7 @@ public class DBApp {
 					Page erase = null;
 					serialize(erase, f);///////////////////////////////////////////////
 					serialize(p, f);//////////////////////////////////////////////////////
-					serializeTable(table, "resources/data/"+table.getName()+".class");
+					serializeTable(table, "src/resources/data/"+table.getName()+".class");
 					page = null;
 					p = null;
 					System.gc();
@@ -562,7 +562,7 @@ public class DBApp {
 					serialize(erase, fi);
 					serialize(p, f);////////////////////////////////////////////////////////////////////
 					serialize(next,fi);
-					serializeTable(table, "resources/data/"+table.getName()+".class");
+					serializeTable(table, "src/resources/data/"+table.getName()+".class");
 					p = null;
 					next = null;
 					System.gc();
@@ -579,7 +579,7 @@ public class DBApp {
 			throws DBAppException {
 
 
-		Table table = deserializeTable("resources/data/"+strTableName+".class");
+		Table table = deserializeTable("src/resources/data/"+strTableName+".class");
 
 		if(htblColNameValue.containsKey(table.getPK()) || strClusteringKeyValue.isEmpty()) {
 			throw new DBAppException();
@@ -648,7 +648,7 @@ public class DBApp {
 					Page erase = null;
 					serialize(erase, f);///////////////////////////////////////////////////////////////
 					serialize(p, f);//////////////////////////////////////////////////////////////////
-					serializeTable(table, "resources/data/"+table.getName()+".class");
+					serializeTable(table, "src/resources/data/"+table.getName()+".class");
 
 					p = null;
 					System.gc();
@@ -669,7 +669,7 @@ public class DBApp {
 								Hashtable<String,Object> htblColNameValue) throws DBAppException {
 
 
-		Table table = deserializeTable("resources/data/"+strTableName + ".class");
+		Table table = deserializeTable("src/resources/data/"+strTableName + ".class");
 
 		boolean check = checkcallname(strTableName,htblColNameValue);
 		boolean check1 = checkDataType(strTableName, htblColNameValue);
@@ -719,7 +719,7 @@ public class DBApp {
 							else {
 								serialize(p, f);////////////////////////////////////////////////////////
 							}
-							serializeTable(table, "resources/data/"+table.getName()+".class");
+							serializeTable(table, "src/resources/data/"+table.getName()+".class");
 							p = null;
 							System.gc();
 							return;
@@ -766,7 +766,7 @@ public class DBApp {
 					else {
 						serialize(p, f);
 					}
-					serializeTable(table, "resources/data/"+table.getName()+".class");
+					serializeTable(table, "src/resources/data/"+table.getName()+".class");
 				}
 			}
 			p = null;
