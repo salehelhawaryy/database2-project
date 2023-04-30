@@ -1,4 +1,6 @@
 import java.io.*;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -7,14 +9,17 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class DBApp {
 
 	boolean ranOnce = false;
-	Vector<Table> tables;
 
-	Hashtable<String, File> files;
 	String MaximumRowsCountinTablePage;
 	String MaximumEntriesinOctreeNode;
-	public DBApp() throws DBAppException {
-		tables = new Vector<Table>();
-		files = new Hashtable<String, File>();
+	public DBApp() {
+
+	}
+	public void init( ) {
+
+	}
+
+	public void readConfig() throws DBAppException {
 		File f =new File("resources/DBApp.config");
 		FileInputStream fis = null;
 		try {
@@ -29,16 +34,13 @@ public class DBApp {
 			throw new DBAppException();
 		}
 		MaximumRowsCountinTablePage = p.getProperty("MaximumRowsCountinTablePage");
-		 MaximumEntriesinOctreeNode = p.getProperty("MaximumEntriesinOctreeNode");
-	}
-	public void init( ){
-
+		MaximumEntriesinOctreeNode = p.getProperty("MaximumEntriesinOctreeNode");
 	}
 
 	public static Vector<Vector<String>> readCSV() throws DBAppException {
 		BufferedReader br = null;
 		try {
-			br = new BufferedReader(new FileReader("metadata.csv"));
+			br = new BufferedReader(new FileReader("resources/"+"metadata.csv"));
 		} catch (FileNotFoundException e) {
 			throw new DBAppException();
 		}
@@ -117,6 +119,11 @@ public class DBApp {
 			}
 		}
 
+		File fq = new File("resources/data/"+strTableName+".class");
+		if(fq.exists()) {
+			throw new DBAppException();
+		}
+
 
 		String Colname;
 		String Coltype;
@@ -124,16 +131,15 @@ public class DBApp {
 		String Min;
 		String Max;
 		Table table = new Table(strTableName,strClusteringKeyColumn,htblColNameType,htblColNameMin,htblColNameMax);
-		tables.add(table);
-		serializeTable(table, strTableName+".class");
-		File f = new File(strTableName);
+		serializeTable(table, "resources/data/"+strTableName+".class");
+		File f = new File("resources/data/"+strTableName);
 		f.mkdir();
 
 		Enumeration<String> enu = htblColNameType.keys();
 
 		PrintWriter pw = null;
 		try {
-			pw = new PrintWriter(new FileWriter("metadata.csv", true));
+			pw = new PrintWriter(new FileWriter("resources/"+"metadata.csv", true));
 		} catch (IOException e) {
 			throw new DBAppException();
 		}
@@ -192,13 +198,13 @@ public class DBApp {
 	public void serialize(Page p, String fileName) throws DBAppException {
 		try {
 			File f = new File(fileName);
-			files.put(fileName, f);
 			FileOutputStream fileOutputStream = new FileOutputStream(fileName);
 			ObjectOutputStream objectOutputStream = new ObjectOutputStream(fileOutputStream);
 			objectOutputStream.writeObject(p);
 			objectOutputStream.close();
 			fileOutputStream.close();
 		} catch (IOException e) {
+			e.printStackTrace();
 			throw new DBAppException();
 		}
 	}
@@ -222,13 +228,13 @@ public class DBApp {
 	public void serializeTable(Table p, String fileName) throws DBAppException {
 		try {
 			File f = new File(fileName);
-			files.put(fileName, f);
 			FileOutputStream fileOutputStream = new FileOutputStream(fileName);
 			ObjectOutputStream objectOutputStream = new ObjectOutputStream(fileOutputStream);
 			objectOutputStream.writeObject(p);
 			objectOutputStream.close();
 			fileOutputStream.close();
 		} catch (IOException e) {
+			e.printStackTrace();
 			throw new DBAppException();
 		}
 	}
@@ -253,7 +259,7 @@ public class DBApp {
 
 
 
-		Table table = deserializeTable(strTableName+".class");
+		Table table = deserializeTable("resources/data/"+strTableName+".class");
 
 
 
@@ -279,17 +285,21 @@ public class DBApp {
 			}
 		});
 
-
+		readConfig();
 
 		if(table.rows.isEmpty()) {
 			Page page = new Page(Integer.parseInt(MaximumRowsCountinTablePage));
 			table.rows.add(page);
 			page.tuples.add(htblColNameValue);
-			String fileName = strTableName+"/"+getAlphaNumericString();
+			String fileName = "resources/data/"+strTableName+"/"+getAlphaNumericString();
 			fileName+=".class";
+			while(table.serializedFilesName.contains(fileName)) {
+				fileName = "resources/data/"+strTableName+"/"+getAlphaNumericString();
+				fileName+=".class";
+			}
 			serialize(page, fileName);
 			table.serializedFilesName.add(fileName);
-			serializeTable(table, table.getName()+".class");
+			serializeTable(table, "resources/data/"+table.getName()+".class");
 			page = null;
 			System.gc();
 			return;
@@ -300,7 +310,7 @@ public class DBApp {
 
 		int maxPage = table.rows.size()-1;
 		String f = table.serializedFilesName.get(maxPage);
-
+		readConfig();
 		Page max = deserialize(f);
 		Hashtable<String,Object> maxTuple = max.tuples.get(max.tuples.size()-1);
 		if(maxTuple.get(pk).toString().compareTo(htblColNameValue.get(pk).toString()) < 0) {
@@ -309,11 +319,15 @@ public class DBApp {
 				page.tuples.add(htblColNameValue);
 				table.rows.add(page);
 				//int num = newCount1 + 1;/////////////////////////////////////////////////////////////////////////////////////////
-				String fileName = strTableName+"/"+getAlphaNumericString();
+				String fileName = "resources/data/"+strTableName+"/"+getAlphaNumericString();
 				fileName+=".class";
+				while(table.serializedFilesName.contains(fileName)) {
+					fileName = "resources/data/"+strTableName+"/"+getAlphaNumericString();
+					fileName+=".class";
+				}
 				serialize(page, fileName);
 				table.serializedFilesName.add(fileName);
-				serializeTable(table, table.getName()+".class");
+				serializeTable(table, "resources/data/"+table.getName()+".class");
 				page = null;
 				max = null;
 				System.gc();
@@ -322,7 +336,7 @@ public class DBApp {
 			else {
 				max.tuples.add(htblColNameValue);
 				serialize(max, f);////////////////////////////////////////////////////
-				serializeTable(table, table.getName()+".class");
+				serializeTable(table, "resources/data/"+table.getName()+".class");
 				max = null;
 				System.gc();
 				return;
@@ -348,7 +362,7 @@ public class DBApp {
 					if (j == 0) {
 						p.tuples.insertElementAt(htblColNameValue, i);
 						serialize(p, fil);///////////////////////////////////////
-						serializeTable(table, table.getName() + ".class");
+						serializeTable(table, "resources/data/"+table.getName() + ".class");
 						p = null;
 						System.gc();
 						redistributeIns(table);
@@ -357,11 +371,12 @@ public class DBApp {
 					} else {
 //						int w = newCount-1;//////////////////////////////////////////////////////////////////////////////////
 						String fi = table.serializedFilesName.get(j - 1);
+						readConfig();
 						Page beforeMe = deserialize(fi);
 						if (beforeMe.tuples.size() < Integer.parseInt(MaximumRowsCountinTablePage)) {
 							beforeMe.tuples.add(htblColNameValue);
 							serialize(beforeMe, fi);
-							serializeTable(table, table.getName() + ".class");
+							serializeTable(table, "resources/data/"+table.getName() + ".class");
 							test = true;
 							p = null;
 							beforeMe = null;
@@ -370,7 +385,7 @@ public class DBApp {
 						} else {
 							p.tuples.insertElementAt(htblColNameValue, i);
 							serialize(p, fil);///////////////////////////////////////////////
-							serializeTable(table, table.getName() + ".class");
+							serializeTable(table, "resources/data/"+table.getName() + ".class");
 							redistributeIns(table);
 							test = true;
 							p = null;
@@ -493,14 +508,19 @@ public class DBApp {
 			String f = table.serializedFilesName.get(i);
 			Page p = deserialize(f);
 			//Page p = deserialize(table.getName()+"page"+i+".class");
+			readConfig();
 			if(p.tuples.size()>Integer.parseInt(MaximumRowsCountinTablePage))
 			{
 				if(i==table.rows.size()-1)
 				{
 					Page page = new Page(Integer.parseInt(MaximumRowsCountinTablePage));
 					table.rows.add(page);
-					String fileName = table.getName()+"/"+getAlphaNumericString();
+					String fileName = "resources/data/"+table.getName()+"/"+getAlphaNumericString();
 					fileName+=".class";
+					while(table.serializedFilesName.contains(fileName)) {
+						fileName = "resources/data/"+table.getName()+"/"+getAlphaNumericString();
+						fileName+=".class";
+					}
 //					serialize(page, fileName);
 					table.serializedFilesName.add(fileName);
 //					page.tuples.add(table.rows.get(i).tuples.get(table.rows.get(i).tuples.size()-1));
@@ -516,7 +536,7 @@ public class DBApp {
 					Page erase = null;
 					serialize(erase, f);///////////////////////////////////////////////
 					serialize(p, f);//////////////////////////////////////////////////////
-					serializeTable(table, table.getName()+".class");
+					serializeTable(table, "resources/data/"+table.getName()+".class");
 					page = null;
 					p = null;
 					System.gc();
@@ -536,7 +556,7 @@ public class DBApp {
 					serialize(erase, fi);
 					serialize(p, f);////////////////////////////////////////////////////////////////////
 					serialize(next,fi);
-					serializeTable(table, table.getName()+".class");
+					serializeTable(table, "resources/data/"+table.getName()+".class");
 					p = null;
 					next = null;
 					System.gc();
@@ -553,7 +573,7 @@ public class DBApp {
 			throws DBAppException {
 
 
-		Table table = deserializeTable(strTableName+".class");
+		Table table = deserializeTable("resources/data/"+strTableName+".class");
 
 		if(htblColNameValue.containsKey(table.getPK()) || strClusteringKeyValue.isEmpty()) {
 			throw new DBAppException();
@@ -586,10 +606,29 @@ public class DBApp {
 			while(first1 <= last1) {
 				Hashtable<String,Object> tuple = p.tuples.get(mid1);
 				Object val = tuple.get(pk); // tuple elly fy el table
-				if(val.toString().compareTo(strClusteringKeyValue) < 0) {
+				int compare = 0;
+				if(val instanceof Double) {
+					Double strClust = Double.parseDouble(strClusteringKeyValue);
+					compare = Double.compare((Double) val, strClust);
+				} else if(val instanceof Integer) {
+					Integer strClust = Integer.parseInt(strClusteringKeyValue);
+					compare = Integer.compare((Integer) val, strClust);
+				} else if (val instanceof String) {
+					compare = val.toString().compareTo(strClusteringKeyValue);
+				} else {
+					SimpleDateFormat formatter2=new SimpleDateFormat("YYYY-MM-DD");
+					Date strClust;
+					try {
+						strClust = formatter2.parse(strClusteringKeyValue);
+					} catch (ParseException e) {
+						throw new DBAppException();
+					}
+					compare = ((Date)val).compareTo(strClust);
+				}
+				if(compare < 0) {
 					first1 = mid1 + 1;
 				}
-				else if(val.toString().compareTo(strClusteringKeyValue) == 0) {
+				else if(compare == 0) {
 					int finalMid = mid1;
 					Page finalP = p;
 					p.tuples.get(mid1).forEach((k, v) ->{
@@ -603,12 +642,11 @@ public class DBApp {
 					Page erase = null;
 					serialize(erase, f);///////////////////////////////////////////////////////////////
 					serialize(p, f);//////////////////////////////////////////////////////////////////
-					serializeTable(table, table.getName()+".class");
+					serializeTable(table, "resources/data/"+table.getName()+".class");
 
 					p = null;
 					System.gc();
 					done = true;
-					updated = true;
 					break;
 				}
 				else {
@@ -618,16 +656,14 @@ public class DBApp {
 			}
 			if(done) break;
 		}
-		if(!updated) {
-			throw new DBAppException();
-		}
+
 	}
 
 	public void deleteFromTable(String strTableName,
 								Hashtable<String,Object> htblColNameValue) throws DBAppException {
 
 
-		Table table = deserializeTable(strTableName + ".class");
+		Table table = deserializeTable("resources/data/"+strTableName + ".class");
 
 		boolean check = checkcallname(strTableName,htblColNameValue);
 		boolean check1 = checkDataType(strTableName, htblColNameValue);
@@ -677,7 +713,7 @@ public class DBApp {
 							else {
 								serialize(p, f);////////////////////////////////////////////////////////
 							}
-							serializeTable(table, table.getName()+".class");
+							serializeTable(table, "resources/data/"+table.getName()+".class");
 							p = null;
 							System.gc();
 							return;
@@ -724,147 +760,11 @@ public class DBApp {
 					else {
 						serialize(p, f);
 					}
-					serializeTable(table, table.getName()+".class");
+					serializeTable(table, "resources/data/"+table.getName()+".class");
 				}
 			}
 			p = null;
 			System.gc();
 		}
 	}
-
-	public static void main(String[] args) throws IOException, DBAppException {
-		String strTableName = "Student";
-		DBApp dbApp = new DBApp( );
-		Hashtable htblColNameType = new Hashtable( );
-		Hashtable htblColNameMin = new Hashtable( );
-		Hashtable htblColNameMax = new Hashtable( );
-		htblColNameType.put("id", "java.lang.Integer");
-		htblColNameType.put("name", "java.lang.String");
-		htblColNameType.put("gpa", "java.lang.double");
-		htblColNameMin.put("id", "0");
-		htblColNameMax.put("id", "100000000");
-		htblColNameMin.put("name", "a");
-		htblColNameMax.put("name", "zzzzzzzzzzzzzzzzzzzzzzz");
-		htblColNameMin.put("gpa", "0.0");
-		htblColNameMax.put("gpa", "100.0");
-//		dbApp.createTable( strTableName, "id", htblColNameType, htblColNameMin, htblColNameMax);
-////
-////
-////		String strTableName1 = "Alooo";
-////		Hashtable htblColNameType1 = new Hashtable( );
-////		Hashtable htblColNameMin1 = new Hashtable( );
-////		Hashtable htblColNameMax1 = new Hashtable( );
-////		htblColNameType1.put("id1", "java.lang.Integer");
-////		htblColNameType1.put("name1", "java.lang.String");
-////		htblColNameType1.put("gpa1", "java.lang.double");
-////		htblColNameMin1.put("id1", "0");
-////		htblColNameMax1.put("id1", "100");
-////		dbApp.createTable( strTableName1, "id1", htblColNameType1, htblColNameMin1, htblColNameMax1);
-////
-////
-////
-//		Hashtable htblColNameValue5 = new Hashtable( );
-//		htblColNameValue5.put("id", new Integer( 2343429 ));
-//		htblColNameValue5.put("name", new String("zoz") );
-//		htblColNameValue5.put("gpa", new Double( 0.95 ) );
-//		dbApp.insertIntoTable( strTableName , htblColNameValue5 );
-////
-//		Hashtable htblColNameValue = new Hashtable( );
-//		htblColNameValue.put("id", new Integer( 2343432 ));
-//		htblColNameValue.put("name", new String("ahmed noor" ) );
-//		htblColNameValue.put("gpa", new Double( 0.95 ) );
-//		dbApp.insertIntoTable( strTableName , htblColNameValue );
-//
-//		Hashtable htblColNameValue1 = new Hashtable( );
-//		htblColNameValue1.put("id", new Integer( 2343433 ));
-//		htblColNameValue1.put("name", new String("youssef" ) );
-//		htblColNameValue1.put("gpa", new Double( 0.95 ) );
-//		dbApp.insertIntoTable( strTableName , htblColNameValue1 );
-////
-//		Hashtable htblColNameValue2 = new Hashtable( );
-//		htblColNameValue2.put("id", new Integer( 2343428 ));
-//		htblColNameValue2.put("name", new String("Ahmed" ) );
-//		htblColNameValue2.put("gpa", new Double( 0.95 ) );
-//		dbApp.insertIntoTable( strTableName , htblColNameValue2 );
-//
-//		Hashtable htblColNameValue3 = new Hashtable( );
-//		htblColNameValue3.put("id", new Integer( 2343434 ));
-//		htblColNameValue3.put("name", new String("mohamed" ) );
-//		htblColNameValue3.put("gpa", new Double( 0.95 ) );
-//		dbApp.insertIntoTable( strTableName , htblColNameValue3 );
-
-
-//
-//
-//		Hashtable htblColNameVal = new Hashtable( );
-////		htblColNameVal.put("id", new Integer( 2343428 ));
-////		htblColNameVal.put("name", new String("Ahmed" ) );
-//		htblColNameVal.put("gpa", new Double( 55.0 ) );
-//		dbApp.deleteFromTable( strTableName , htblColNameVal );
-////
-//////		Hashtable htblColNameValue32 = new Hashtable( );
-//////		htblColNameValue32.put("id", new Integer( 2343431 ));
-//////		htblColNameValue32.put("name", new String("mohame" ) );
-//////		htblColNameValue32.put("gpa", new Double( 0.95 ) );
-//////		dbApp.insertIntoTable( strTableName , htblColNameValue32 );
-//////
-//		Hashtable htblColNameVa = new Hashtable( );
-////		htblColNameVa.put("id", new Integer( 2343432 ));
-//////		htblColNameVa.put("name", new String("test was ahmed noor" ) );
-//		htblColNameVa.put("gpa", new Double( 0.95 ) );
-//		dbApp.deleteFromTable( strTableName , htblColNameVa );
-//
-//
-//
-////		Hashtable htblColNameValue5 = new Hashtable( );
-////		htblColNameValue5.put("id", new Integer( 2343429 ));
-////		htblColNameValue5.put("name", new String("zoz" ) );
-////		htblColNameValue5.put("gpa", new Double( 0.95 ) );
-////		dbApp.insertIntoTable( strTableName , htblColNameValue5 );
-////
-//		Hashtable update = new Hashtable( );
-//		update.put("name", new String("test was Ahmed" ) );
-//		update.put("gpa", new Double(55.0) );
-//		dbApp.updateTable(strTableName, "2343429", update);
-//
-//		Hashtable htblColNameValu = new Hashtable( );
-//		htblColNameValu.put("name", new String("test was ahmed noor" ) );
-//		htblColNameValu.put("gpa", new Double(2.0 ) );
-//		dbApp.deleteFromTable( strTableName , htblColNameValu );
-////
-//		Hashtable htblColNameV = new Hashtable( );
-//		htblColNameV.put("gpa", new Double(0.95 ) );
-//		dbApp.deleteFromTable( strTableName , htblColNameV );
-////
-//		Hashtable htblColNameValue4 = new Hashtable( );
-//		htblColNameValue4.put("id", new Integer( 2343434 ));
-//		htblColNameValue4.put("name", new String("zizooo" ) );
-//		htblColNameValue4.put("gpa", new Double( 0.95 ) );
-//		dbApp.insertIntoTable( strTableName , htblColNameValue4 );
-//
-//		Hashtable htblColNameValue66 = new Hashtable( );
-//		htblColNameValue66.put("id", new Integer( 2343435 ));
-//		htblColNameValue66.put("name", new String("yarab" ) );
-//		htblColNameValue66.put("gpa", new Double( 0.95 ) );
-//		dbApp.insertIntoTable( strTableName , htblColNameValue66 );
-
-
-		Table t = dbApp.deserializeTable(strTableName+".class");
-//		System.out.println(t.rows.size());
-		for(int i = 0;i < t.rows.size();i++) {
-
-			String f = t.serializedFilesName.get(i);
-			Page p = dbApp.deserialize(f);
-			//Page p = t.rows.get(i);
-			for(int j = 0;j<p.tuples.size();j++) {
-				Hashtable<String,Object> h = p.tuples.get(j);
-				System.out.println(h);
-			}
-			System.out.println();
-		}
-//		System.out.println();
-	}
-
-
-
 }
