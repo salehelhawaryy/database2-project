@@ -1,6 +1,10 @@
 import java.io.*;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.time.LocalDate;
+import java.time.Period;
+import java.time.ZoneId;
+import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -893,7 +897,7 @@ public class DBApp {
 		}
 	}
 
-	public static void main(String[] args) throws IOException, DBAppException {
+	public static void main(String[] args) throws IOException, DBAppException, ParseException {
 		String strTableName = "Student";
 		DBApp dbApp = new DBApp();
 		Hashtable htblColNameType = new Hashtable();
@@ -931,7 +935,6 @@ public class DBApp {
 		System.out.println(hashString("abdel")+hashString("rahma")+hashString("n ahm")+hashString("ed ah")+hashString("med"));
 		System.out.println(hashString("kzzz")+hashString("zzzzz")+hashString("zzzzz")+hashString("zzzzz")+hashString("zzz"));
 		System.out.println(hashString("ziad")+hashString("tamer")+hashString("zzzzz")+hashString("zzzzz")+hashString("zzz "));
-		Octree<String> a7a = new Octree<>();
 
 //		System.out.println(hashString2("abdel")+hashString2("rahma")+hashString2("n ahm")+hashString2("ed ah")+hashString2("med"));
 //		System.out.println(hashString2("zbaaa")+hashString2("aaaaa")+hashString2("aaaaa")+hashString2("aaaaa")+hashString2("aaa"));
@@ -1043,6 +1046,31 @@ public class DBApp {
 //			System.out.println();
 //		}
 ////		System.out.println();
+
+		SimpleDateFormat sdformat = new SimpleDateFormat("yyyy-MM-dd");
+
+		Date date1 = new Date(); // Replace this with your own Date object
+		Date date2 = new Date(); // Replace this with your own Date object
+
+		date1 = sdformat.parse("2002-01-01");
+		date2 = sdformat.parse("2004-01-01");
+
+
+
+// Convert Date objects to LocalDate objects
+
+
+		SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+		long diffInDays = ChronoUnit.DAYS.between(date1.toInstant(), date2.toInstant());
+		Date midDate = new Date(date1.getTime() + diffInDays / 2 * 24L * 60L * 60L * 1000L);
+		String midDateStr = dateFormat.format(midDate);
+
+		System.out.println(midDateStr); // Output the midpoint date
+
+		//System.out.println(midDateAsDate); // Output the midpoint date
+
+
+
 //	}
 
 
