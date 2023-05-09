@@ -1,22 +1,31 @@
-
-
 public class OctPoint {
 
     private Object x;
     private Object y;
     private Object z;
 
-    private boolean nullify = false;
+    Object object;
 
-    public OctPoint(Object x, Object y, Object z){
+   // private boolean nullify = false;
+
+    public Object getObject() {
+        return object;
+    }
+
+    public void setObject(Object object) {
+        this.object = object;
+    }
+
+    public OctPoint(Object x, Object y, Object z, Object object){
         this.x = x;
         this.y = y;
         this.z = z;
+        object=object;
     }
 
-    public OctPoint(){
-        nullify = true;
-    }
+//    public OctPoint(){
+//        nullify = true;
+//    }
 
     public Object getX(){
         return x;
@@ -30,7 +39,7 @@ public class OctPoint {
         return z;
     }
 
-    public boolean isNullified(){
-        return nullify;
-    }
+//    public boolean isNullified(){
+//        return nullify;
+//    }
 }

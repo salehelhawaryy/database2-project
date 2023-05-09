@@ -1,277 +1,47 @@
-import java.util.Date;
-import java.util.Objects;
+import java.util.Vector;
 
-public class Octree<T> {
+public class Octree {
+    Vector<OctPoint> points=new Vector<>();
+    OctPoint topBoundary,BottomBoundary;
+    Octree[] children= new Octree[8];
 
-    private OctPoint point;
+    int limit;
 
-    private OctPoint topLeftFront, bottomRightBack;
 
-    private Octree<T>[] children = new Octree[8];
 
-    private T object;
-
-    public Octree() throws DBAppException {
-        point = new OctPoint();
+    public Octree(Object x1,Object y1,Object z1,Object x2,Object y2,Object z2,int limit){
+        this.topBoundary=new OctPoint(x1,y1,z1,null);
+        this.BottomBoundary=new OctPoint(x2,y2,z2, null);
+        limit=limit;
     }
 
-    public Octree(Object x, Object y, Object z, T object) throws DBAppException {
-        this.point = new OctPoint(x, y, z);
-        this.object = object;
+    public void split(){
+        Object midx;
+        Object midy;
+        Object midz;
+
+
+
+        children[0]=new Octree()
     }
 
-    public Octree(Object x1, Object y1, Object z1, Object x2, Object y2, Object z2) throws DBAppException {
-//        if(x2 < x1 || y2 < y1 || z2 < z1){
-//            throw new DBAppException("The bounds are not properly set!");
-//        }
-
-        point = null;
-        topLeftFront = new OctPoint(x1, y1, z1);
-        bottomRightBack = new OctPoint(x2, y2, z2);
-
-        for (int i = 0; i <= 7; i++){
-            children[i] = new Octree<>();
+    public void insert(Object x,Object y,Object z, Object data){
+        OctPoint insertion = new OctPoint(x,y,z,data);
+        if(points.size()<limit){
+            points.add(insertion);
+            return;
         }
+
+        split();
+
+        Object midx;
+        Object midy;
+        Object midz;
+
+        if()
+
     }
 
-    public void insert(int x, int y, int z, T object) throws DBAppException {
-        if(find(x, y, z)){
-            throw new DBAppException("Point already exists in the tree. X: " + x + " Y: " + y + " Z: " + z + " Object Name: " + object.getClass().getName());
-        }
 
-//        if (x < topLeftFront.getX() || x > bottomRightBack.getX()
-//                || y < topLeftFront.getY() || y > bottomRightBack.getY()
-//                || z < topLeftFront.getZ() || z > bottomRightBack.getZ()){
-//            throw new DBAppException("Insertion point is out of bounds! X: " + x + " Y: " + y + " Z: " + z + " Object Name: " + object.getClass().getName());
-//        }
-
-        Object midx=null;
-        Object midy=null;
-
-        if (topLeftFront.getX() instanceof Integer) {
-            midx=((Integer)topLeftFront.getX() +(Integer) bottomRightBack.getX())/2;
-        }
-        else if(topLeftFront.getX() instanceof Double){
-            midx=((Double)topLeftFront.getX() +(Double) bottomRightBack.getX())/2;
-        }
-        else if(topLeftFront.getX() instanceof Date){
-            //midx=
-        }
-
-
-        //int midx = (topLeftFront.getX() + bottomRightBack.getX())/2;
-        int midy = (topLeftFront.getY() + bottomRightBack.getY())/2;
-        int midz = (topLeftFront.getZ() + bottomRightBack.getZ())/2;
-
-        int pos;
-
-        if(x <= midx){
-            if(y <= midy){
-                if(z <= midz)
-                    pos = OctLocations.TopLeftFront.getNumber();
-                else
-                    pos = OctLocations.TopLeftBottom.getNumber();
-            }else{
-                if(z <= midz)
-                    pos = OctLocations.BottomLeftFront.getNumber();
-                else
-                    pos = OctLocations.BottomLeftBack.getNumber();
-            }
-        }else{
-            if(y <= midy){
-                if(z <= midz)
-                    pos = OctLocations.TopRightFront.getNumber();
-                else
-                    pos = OctLocations.TopRightBottom.getNumber();
-            }else {
-                if(z <= midz)
-                    pos = OctLocations.BottomRightFront.getNumber();
-                else
-                    pos = OctLocations.BottomRightBack.getNumber();
-            }
-        }
-
-        if(children[pos].point == null){
-            children[pos].insert(x, y, z, object);
-        }
-        else if(children[pos].point.isNullified()){
-            children[pos] = new Octree<>(x, y, z, object);
-        }
-        else{
-            int x_ = children[pos].point.getX();
-            int y_ = children[pos].point.getY();
-            int z_ = children[pos].point.getZ();
-            T object_ = children[pos].object;
-            children[pos] = null;
-            if(pos ==OctLocations.TopLeftFront.getNumber()){
-                children[pos] = new Octree<>(topLeftFront.getX(), topLeftFront.getY(), topLeftFront.getZ(), midx, midy, midz);
-            }
-            else if(pos == OctLocations.TopRightFront.getNumber()){
-                children[pos] = new Octree<>(midx + 1, topLeftFront.getY(), topLeftFront.getZ(), bottomRightBack.getX(), midy, midz);
-            }
-            else if(pos == OctLocations.BottomRightFront.getNumber()){
-                children[pos] = new Octree<>(midx + 1, midy +1, topLeftFront.getZ(), bottomRightBack.getX(), bottomRightBack.getY(), midz);
-            }
-            else if(pos == OctLocations.BottomLeftFront.getNumber()){
-                children[pos] = new Octree<>(topLeftFront.getX(), midy +1, topLeftFront.getZ(), midx, bottomRightBack.getY(), midz);
-            }
-            else if(pos == OctLocations.TopLeftBottom.getNumber()){
-                children[pos] = new Octree<>(topLeftFront.getX(), topLeftFront.getY(), midz + 1, midx, midy, bottomRightBack.getZ());
-            }
-            else if(pos == OctLocations.TopRightBottom.getNumber()){
-                children[pos] = new Octree<>(midx +1, topLeftFront.getY(), midz +1, bottomRightBack.getX(), midy, bottomRightBack.getZ());
-            }
-            else if(pos == OctLocations.BottomRightBack.getNumber()){
-                children[pos] = new Octree<>(midx + 1, midy +1, midz +1, bottomRightBack.getX(), bottomRightBack.getY(), bottomRightBack.getZ());
-            }
-            else if(pos == OctLocations.BottomLeftBack.getNumber()){
-                children[pos] = new Octree<>(topLeftFront.getX(), midy +1, midz +1, midx, bottomRightBack.getY(), bottomRightBack.getZ());
-            }
-
-            children[pos].insert(x_, y_, z_, object_);
-            children[pos].insert(x, y, z, object);
-        }
-    }
-
-    public boolean find(int x, int y, int z){
-        if (x < topLeftFront.getX() || x > bottomRightBack.getX()
-                || y < topLeftFront.getY() || y > bottomRightBack.getY()
-                || z < topLeftFront.getZ() || z > bottomRightBack.getZ()) return false;
-        int midx = (topLeftFront.getX() + bottomRightBack.getX())/2;
-        int midy = (topLeftFront.getY() + bottomRightBack.getY())/2;
-        int midz = (topLeftFront.getZ() + bottomRightBack.getZ())/2;
-
-        int pos;
-
-        if(x <= midx){
-            if(y <= midy){
-                if(z <= midz)
-                    pos = OctLocations.TopLeftFront.getNumber();
-                else
-                    pos = OctLocations.TopLeftBottom.getNumber();
-            }else{
-                if(z <= midz)
-                    pos = OctLocations.BottomLeftFront.getNumber();
-                else
-                    pos = OctLocations.BottomLeftBack.getNumber();
-            }
-        }else{
-            if(y <= midy){
-                if(z <= midz)
-                    pos = OctLocations.TopRightFront.getNumber();
-                else
-                    pos = OctLocations.TopRightBottom.getNumber();
-            }else {
-                if(z <= midz)
-                    pos = OctLocations.BottomRightFront.getNumber();
-                else
-                    pos = OctLocations.BottomRightBack.getNumber();
-            }
-        }
-
-        if(children[pos].point == null)
-            return children[pos].find(x, y, z);
-        if(children[pos].point.isNullified())
-            return false;
-        return x == children[pos].point.getX() && y == children[pos].point.getY() && z == children[pos].point.getZ();
-    }
-
-    public T get(int x, int y, int z){
-        if (x < topLeftFront.getX() || x > bottomRightBack.getX()
-                || y < topLeftFront.getY() || y > bottomRightBack.getY()
-                || z < topLeftFront.getZ() || z > bottomRightBack.getZ()) return null;
-        int midx = (topLeftFront.getX() + bottomRightBack.getX())/2;
-        int midy = (topLeftFront.getY() + bottomRightBack.getY())/2;
-        int midz = (topLeftFront.getZ() + bottomRightBack.getZ())/2;
-
-        int pos;
-
-        if(x <= midx){
-            if(y <= midy){
-                if(z <= midz)
-                    pos = OctLocations.TopLeftFront.getNumber();
-                else
-                    pos = OctLocations.TopLeftBottom.getNumber();
-            }else{
-                if(z <= midz)
-                    pos = OctLocations.BottomLeftFront.getNumber();
-                else
-                    pos = OctLocations.BottomLeftBack.getNumber();
-            }
-        }else{
-            if(y <= midy){
-                if(z <= midz)
-                    pos = OctLocations.TopRightFront.getNumber();
-                else
-                    pos = OctLocations.TopRightBottom.getNumber();
-            }else {
-                if(z <= midz)
-                    pos = OctLocations.BottomRightFront.getNumber();
-                else
-                    pos = OctLocations.BottomRightBack.getNumber();
-            }
-        }
-
-        if(children[pos].point == null)
-            return children[pos].get(x, y, z);
-        if(children[pos].point.isNullified())
-            return null;
-        if(x == children[pos].point.getX() && y == children[pos].point.getY() && z == children[pos].point.getZ()){
-            return children[pos].object;
-        }
-
-        return null;
-    }
-
-    public boolean remove(int x, int y, int z) throws DBAppException {
-        if (x < topLeftFront.getX() || x > bottomRightBack.getX()
-                || y < topLeftFront.getY() || y > bottomRightBack.getY()
-                || z < topLeftFront.getZ() || z > bottomRightBack.getZ()) return false;
-        int midx = (topLeftFront.getX() + bottomRightBack.getX())/2;
-        int midy = (topLeftFront.getY() + bottomRightBack.getY())/2;
-        int midz = (topLeftFront.getZ() + bottomRightBack.getZ())/2;
-
-        int pos;
-
-        if(x <= midx){
-            if(y <= midy){
-                if(z <= midz)
-                    pos = OctLocations.TopLeftFront.getNumber();
-                else
-                    pos = OctLocations.TopLeftBottom.getNumber();
-            }else{
-                if(z <= midz)
-                    pos = OctLocations.BottomLeftFront.getNumber();
-                else
-                    pos = OctLocations.BottomLeftBack.getNumber();
-            }
-        }else{
-            if(y <= midy){
-                if(z <= midz)
-                    pos = OctLocations.TopRightFront.getNumber();
-                else
-                    pos = OctLocations.TopRightBottom.getNumber();
-            }else {
-                if(z <= midz)
-                    pos = OctLocations.BottomRightFront.getNumber();
-                else
-                    pos = OctLocations.BottomRightBack.getNumber();
-            }
-        }
-
-        if(children[pos].point == null)
-            return children[pos].remove(x, y, z);
-        if(children[pos].point.isNullified())
-            return false;
-        if(x == children[pos].point.getX() && y == children[pos].point.getY() && z == children[pos].point.getZ()){
-            children[pos] = new Octree<>();
-        }
-        return false;
-    }
-    public static void main(String[] args) throws DBAppException {
-        Octree<String> oct = new Octree<>(1, 1, 1, 7, 7, 7);
-        oct.insert(1,2,3,"a7a");
-    }
 
 }
-
