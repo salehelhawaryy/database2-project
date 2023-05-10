@@ -1,3 +1,4 @@
+import java.io.Serializable;
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -5,12 +6,13 @@ import java.time.temporal.ChronoUnit;
 import java.util.Date;
 import java.util.Vector;
 
-public class Octree {
+public class Octree implements Serializable {
+    private static final long serialVersionUID = 1L;
     Vector<OctPoint> points=new Vector<>();
     OctPoint topBoundary,BottomBoundary;
     Octree[] children= new Octree[8];
 
-    boolean hasDuplicates=false;
+
     boolean canInsert=true;
     int limit;
 
@@ -258,10 +260,38 @@ public class Octree {
         }
 
         OctPoint insertion = new OctPoint(x,y,z,data);
+
         if(points.size()<limit && canInsert){
-           points.add(insertion);
+            for(int i=0;i< points.size();i++)
+            {
+                if(points.get(i).getX().equals(x) && points.get(i).getY().equals(y) && points.get(i).getZ().equals(z))
+                {
+                    if(points.get(i).hasDuplicates) {
+                        Vector<Object> vec = (Vector) points.get(i).getObject();
+                        vec.add(insertion);
+                        return;
+                    }
+                    else {
+                        Vector<Object> newVec = new Vector<Object>();
+                        newVec.add(points.get(i).getObject());
+                        newVec.add(insertion);
+                        points.get(i).hasDuplicates = true;
+                        return;
+                    }
+
+                }
+            }
+            points.add(insertion);
             return;
         }
+
+
+
+//        if(points.size()<limit && canInsert){
+//
+//           points.add(insertion);
+//            return;
+//        }
 
         if(this.children[0]==null){
             split(insertion);
@@ -308,13 +338,14 @@ public class Octree {
 
     }
 
-    public void remove(Object x,Object y,Object z) throws DBAppException {
+    public void remove(Object x,Object y,Object z, Object obj) throws DBAppException {
         if(this.canInsert){
             for(int i=0;i<this.points.size();i++){
                 Object x_=points.get(i).getX();
                 Object y_=points.get(i).getY();
                 Object z_=points.get(i).getZ();
-                if(x_.equals(x) && y_.equals(y) && z_.equals(z))
+                Object obj_ = points.get(i).getObject();
+                if(x_.equals(x) && y_.equals(y) && z_.equals(z) && obj_.equals(obj))///////////////rage3 ma3 saleh
                      this.points.remove(this.points.get(i));
             }
         }
@@ -353,7 +384,8 @@ public class Octree {
                         pos = 7;
                 }
             }
-             this.children[pos].remove(x, y, z);
+            Object o = this.children[pos].get(x,y,z);
+             this.children[pos].remove(x, y, z, o);
         }
     }
 

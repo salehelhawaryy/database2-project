@@ -1,10 +1,17 @@
-public class OctPoint {
+import java.io.Serializable;
+import java.util.Vector;
+
+public class OctPoint implements Serializable {
+    private static final long serialVersionUID = 1L;
 
     private Object x;
     private Object y;
     private Object z;
 
     Object object;
+
+    boolean hasDuplicates=false;
+
 
    // private boolean nullify = false;
 

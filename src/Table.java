@@ -14,7 +14,7 @@ public class Table implements Serializable {
    Hashtable<String, String> colNameMax;
 
    Vector<String> serializedFilesName;
-
+	Vector<String> IndexFilesName;
    public Table(String name,String PK,Hashtable<String, String> colNameType,Hashtable<String,String> colNameMin,Hashtable<String,String> colNameMax)
    {
 	   rows = new Vector<Page>();
@@ -24,6 +24,7 @@ public class Table implements Serializable {
 	   this.colNameMax=colNameMax;
 	   this.colNameMin=colNameMin;
 	   serializedFilesName = new Vector<String>();
+	   IndexFilesName = new Vector<String>();
    }
    
    public String getName() {

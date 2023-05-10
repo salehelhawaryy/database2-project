@@ -12,7 +12,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 public class DBApp {
 
-	boolean ranOnce = false;
+	static boolean ranOnce = false;
 
 	String MaximumRowsCountinTablePage;
 	String MaximumEntriesinOctreeNode;
@@ -141,7 +141,9 @@ public class DBApp {
 		f.mkdir();
 
 		Enumeration<String> enu = htblColNameType.keys();
-
+		File q = new File("src/resources/" + "metadata.csv");
+		boolean x= false;
+		if(q.exists()) x=true;
 		PrintWriter pw = null;
 		try {
 			pw = new PrintWriter(new FileWriter("src/resources/" + "metadata.csv", true));
@@ -150,7 +152,7 @@ public class DBApp {
 		}
 		StringBuilder sb = new StringBuilder();
 
-		if (!ranOnce) {
+		if (!x) {
 			ranOnce = true;
 			sb.append("Table Name");
 			sb.append(",");
@@ -211,6 +213,38 @@ public class DBApp {
 		} catch (IOException e) {
 			throw new DBAppException();
 		}
+	}
+
+
+
+	public void serializeIndex(Octree p, String fileName) throws DBAppException {
+		try {
+			File f = new File(fileName);
+			FileOutputStream fileOutputStream = new FileOutputStream(fileName);
+			ObjectOutputStream objectOutputStream = new ObjectOutputStream(fileOutputStream);
+			objectOutputStream.writeObject(p);
+			objectOutputStream.close();
+			fileOutputStream.close();
+		} catch (IOException e) {
+			e.printStackTrace();
+			throw new DBAppException();
+		}
+	}
+
+	public Octree deserializeIndex(String fileName) throws DBAppException {
+		Octree p = null;
+		try {
+			FileInputStream fileInputStream = new FileInputStream(fileName);
+			ObjectInputStream objectInputStream = new ObjectInputStream(fileInputStream);
+			p = (Octree) objectInputStream.readObject();
+			objectInputStream.close();
+			fileInputStream.close();
+		} catch (IOException e) {
+			throw new DBAppException();
+		} catch (ClassNotFoundException e) {
+			throw new DBAppException();
+		}
+		return p;
 	}
 
 	public Page deserialize(String fileName) throws DBAppException {
@@ -307,37 +341,43 @@ public class DBApp {
 		Vector<Vector<String>> vecvec = readCSV();
 		Vector<Object> mins = new Vector<>();
 		Vector<Object> maxs = new Vector<>();
+		Vector<String> order = new Vector<>();
 
 		for (int i = 0; i < vecvec.size(); i++) {
 //			System.out.println(vecvec.get(i).get(0));
 //			System.out.println(strTableName);
 			if (vecvec.get(i).get(0).equals(strTableName)) {
 				if (vecvec.get(i).get(1).equals(strarrColName[0]) || vecvec.get(i).get(1).equals(strarrColName[1]) || vecvec.get(i).get(1).equals(strarrColName[2])) {
+					vecvec.get(i).set(4, strarrColName[0]+strarrColName[1]+strarrColName[2]+"Index");
+					vecvec.get(i).set(5, "Octree");
+					order.add(vecvec.get(i).get(1));
 					switch (vecvec.get(i).get(2).toLowerCase()) {
 						case "java.lang.double":
-							String temp="";
-							String work=vecvec.get(i).get(6);
-							for(int k=0;k<work.length();k++){
-								if(work.charAt(k)!='.')
-									temp+=work.charAt(k);
-								else{
-									temp+=work.charAt(k);
-									temp+=work.charAt(k+1);
-									break;
-								}
-							}
+//							String temp="";
+//							String work=vecvec.get(i).get(6);
+//							for(int k=0;k<work.length();k++){
+//								if(work.charAt(k)!='.')
+//									temp+=work.charAt(k);
+//								else{
+//									temp+=work.charAt(k);
+//									temp+=work.charAt(k+1);
+//									break;
+//								}
+//							}
+							Double temp = Double.parseDouble(vecvec.get(i).get(6));
 							mins.add(temp);
-							temp="";
-							work=vecvec.get(i).get(7);
-							for(int k=0;k<work.length();k++){
-								if(work.charAt(k)!='.')
-									temp+=work.charAt(k);
-								else{
-									temp+=work.charAt(k);
-									temp+=work.charAt(k+1);
-									break;
-								}
-							}
+//							temp="";
+//							work=vecvec.get(i).get(7);
+//							for(int k=0;k<work.length();k++){
+//								if(work.charAt(k)!='.')
+//									temp+=work.charAt(k);
+//								else{
+//									temp+=work.charAt(k);
+//									temp+=work.charAt(k+1);
+//									break;
+//								}
+//							}
+							temp = Double.parseDouble(vecvec.get(i).get(7));
 							maxs.add(temp);
 							break;
 						case "java.lang.string":
@@ -349,8 +389,17 @@ public class DBApp {
 							maxs.add(Integer.parseInt(vecvec.get(i).get(7)));
 							break;
 						case "java.util.date":
-							mins.add(vecvec.get(i).get(6));
-							maxs.add(vecvec.get(i).get(7));
+							SimpleDateFormat sdformat = new SimpleDateFormat("yyyy-MM-dd");
+							Date d1;
+							Date d2;
+							try {
+								d1 = sdformat.parse(vecvec.get(i).get(6));
+								d2 = sdformat.parse(vecvec.get(i).get(7));
+							} catch (ParseException e) {
+								throw new DBAppException();
+							}
+							mins.add(d1);
+							maxs.add(d2);
 							break;
 						default:
 							break;
@@ -361,32 +410,103 @@ public class DBApp {
 			}
 		}
 
-		for (int i = 0; i < mins.size(); i++) {
-			if (mins.get(i) instanceof String) {
-				int insert = hashString(mins.get(i).toString());
-				mins.add(i, insert);
-				mins.remove(i + 1);
+//		for (int i = 0; i < mins.size(); i++) {
+//			if (mins.get(i) instanceof String) {
+//				int insert = hashString(mins.get(i).toString());
+//				mins.add(i, insert);
+//				mins.remove(i + 1);
+//			}
+//			if (maxs.get(i) instanceof String) {
+//				int insert = hashString(maxs.get(i).toString());
+//				maxs.add(i, insert);
+//				maxs.remove(i + 1);
+//			}
+//		}
+//		System.out.print("Mins: ");
+//		System.out.print(mins.size());
+//		for (int i = 0; i < mins.size(); i++) {
+//
+//			System.out.print(mins.get(i) + " ");
+//
+//		}
+//		System.out.println();
+//		System.out.print("Maxs: ");
+//		for (int i = 0; i < maxs.size(); i++) {
+//
+//			System.out.print(maxs.get(i) + " ");
+//		}
+
+		readConfig();
+		String IndexName = "src/resources/data/"+strTableName+"_"+order.get(0)+"_"+order.get(1)+"_"+order.get(2)+"_Index"+".class";
+
+		Octree oct = new Octree(mins.get(0), mins.get(1), mins.get(2), maxs.get(0), maxs.get(1), maxs.get(2), Integer.parseInt(MaximumEntriesinOctreeNode));
+		if(!table.rows.isEmpty()) {
+			for (int i = 0; i < table.rows.size(); i++) {
+				String fil = table.serializedFilesName.get(i);
+				Page p = deserialize(fil);
+				for (int j = 0; j < p.tuples.size() ; j++) {
+					Hashtable<String, Object> tuple = p.tuples.get(j);
+					String[] ord = IndexName.split("_");
+					Object o1 = tuple.get(ord[1]);
+					Object o2 = tuple.get(ord[2]);
+					Object o3 = tuple.get(ord[3]);
+					oct.insert(o1, o2, o3, fil);
+				}
+				p = null;
 			}
-			if (maxs.get(i) instanceof String) {
-				int insert = hashString(maxs.get(i).toString());
-				maxs.add(i, insert);
-				maxs.remove(i + 1);
-			}
 		}
-		System.out.print("Mins: ");
-		System.out.print(mins.size());
-		for (int i = 0; i < mins.size(); i++) {
+		table.IndexFilesName.add(IndexName);
+		serializeIndex(oct, IndexName);
 
-			System.out.print(mins.get(i) + " ");
-
+		//update csv
+		File f = new File("src/resources/" + "metadata.csv");
+		f.delete();
+		PrintWriter pw = null;
+		try {
+			pw = new PrintWriter(new FileWriter("src/resources/" + "metadata.csv", true));
+		} catch (IOException e) {
+			throw new DBAppException();
 		}
-		System.out.println();
-		System.out.print("Maxs: ");
-		for (int i = 0; i < maxs.size(); i++) {
+		StringBuilder sb = new StringBuilder();
 
-			System.out.print(maxs.get(i) + " ");
+		sb.append("Table Name");
+		sb.append(",");
+		sb.append("Column Name");
+		sb.append(",");
+		sb.append("Column Type");
+		sb.append(",");
+		sb.append("Clusterkey");
+		sb.append(",");
+		sb.append("IndexName");
+		sb.append(",");
+		sb.append("IndexType");
+		sb.append(",");
+		sb.append("min");
+		sb.append(",");
+		sb.append("max");
+		sb.append("\r\n");
+
+		for (int i = 0; i < vecvec.size() ; i++) {
+			sb.append(vecvec.get(i).get(0));
+			sb.append(",");
+			sb.append(vecvec.get(i).get(1));
+			sb.append(",");
+			sb.append(vecvec.get(i).get(2));
+			sb.append(",");
+			sb.append(vecvec.get(i).get(3));
+			sb.append(",");
+			sb.append(vecvec.get(i).get(4));
+			sb.append(",");
+			sb.append(vecvec.get(i).get(5));
+			sb.append(",");
+			sb.append(vecvec.get(i).get(6));
+			sb.append(",");
+			sb.append(vecvec.get(i).get(7));
+			sb.append("\r\n");
 		}
-
+		pw.flush();
+		pw.write(sb.toString());
+		pw.close();
 
 	}
 
@@ -432,6 +552,15 @@ public class DBApp {
 				fileName = "src/resources/data/" + strTableName + "/" + getAlphaNumericString();
 				fileName += ".class";
 			}
+			for (int i = 0; i <table.IndexFilesName.size() ; i++) {
+				Octree oct = deserializeIndex(table.IndexFilesName.get(i));
+				String[] ord = table.IndexFilesName.get(i).split("_");
+				Object o1 = htblColNameValue.get(ord[1]);
+				Object o2 = htblColNameValue.get(ord[2]);
+				Object o3 = htblColNameValue.get(ord[3]);
+				oct.insert(o1, o2, o3, fileName);
+				serializeIndex(oct, table.IndexFilesName.get(i));
+			}
 			serialize(page, fileName);
 			table.serializedFilesName.add(fileName);
 			serializeTable(table, "src/resources/data/" + table.getName() + ".class");
@@ -460,6 +589,15 @@ public class DBApp {
 					fileName = "src/resources/data/" + strTableName + "/" + getAlphaNumericString();
 					fileName += ".class";
 				}
+				for (int i = 0; i <table.IndexFilesName.size() ; i++) {
+					Octree oct = deserializeIndex(table.IndexFilesName.get(i));
+					String[] ord = table.IndexFilesName.get(i).split("_");
+					Object o1 = htblColNameValue.get(ord[1]);
+					Object o2 = htblColNameValue.get(ord[2]);
+					Object o3 = htblColNameValue.get(ord[3]);
+					oct.insert(o1, o2, o3, fileName);
+					serializeIndex(oct, table.IndexFilesName.get(i));
+				}
 				serialize(page, fileName);
 				table.serializedFilesName.add(fileName);
 				serializeTable(table, "src/resources/data/" + table.getName() + ".class");
@@ -469,6 +607,15 @@ public class DBApp {
 				return;
 			} else {
 				max.tuples.add(htblColNameValue);
+				for (int i = 0; i <table.IndexFilesName.size() ; i++) {
+					Octree oct = deserializeIndex(table.IndexFilesName.get(i));
+					String[] ord = table.IndexFilesName.get(i).split("_");
+					Object o1 = htblColNameValue.get(ord[1]);
+					Object o2 = htblColNameValue.get(ord[2]);
+					Object o3 = htblColNameValue.get(ord[3]);
+					oct.insert(o1, o2, o3, f);
+					serializeIndex(oct, table.IndexFilesName.get(i));
+				}
 				serialize(max, f);////////////////////////////////////////////////////
 				serializeTable(table, "src/resources/data/" + table.getName() + ".class");
 				max = null;
@@ -495,6 +642,15 @@ public class DBApp {
 				} else {
 					if (j == 0) {
 						p.tuples.insertElementAt(htblColNameValue, i);
+						for (int q = 0; q <table.IndexFilesName.size() ; q++) {
+							Octree oct = deserializeIndex(table.IndexFilesName.get(q));
+							String[] ord = table.IndexFilesName.get(q).split("_");
+							Object o1 = htblColNameValue.get(ord[1]);
+							Object o2 = htblColNameValue.get(ord[2]);
+							Object o3 = htblColNameValue.get(ord[3]);
+							oct.insert(o1, o2, o3, fil);
+							serializeIndex(oct, table.IndexFilesName.get(q));
+						}
 						serialize(p, fil);///////////////////////////////////////
 						serializeTable(table, "src/resources/data/" + table.getName() + ".class");
 						p = null;
@@ -509,6 +665,15 @@ public class DBApp {
 						Page beforeMe = deserialize(fi);
 						if (beforeMe.tuples.size() < Integer.parseInt(MaximumRowsCountinTablePage)) {
 							beforeMe.tuples.add(htblColNameValue);
+							for (int q = 0; q <table.IndexFilesName.size() ; q++) {
+								Octree oct = deserializeIndex(table.IndexFilesName.get(q));
+								String[] ord = table.IndexFilesName.get(q).split("_");
+								Object o1 = htblColNameValue.get(ord[1]);
+								Object o2 = htblColNameValue.get(ord[2]);
+								Object o3 = htblColNameValue.get(ord[3]);
+								oct.insert(o1, o2, o3, fi);
+								serializeIndex(oct, table.IndexFilesName.get(q));
+							}
 							serialize(beforeMe, fi);
 							serializeTable(table, "src/resources/data/" + table.getName() + ".class");
 							test = true;
@@ -518,6 +683,15 @@ public class DBApp {
 							break;
 						} else {
 							p.tuples.insertElementAt(htblColNameValue, i);
+							for (int q = 0; q <table.IndexFilesName.size() ; q++) {
+								Octree oct = deserializeIndex(table.IndexFilesName.get(q));
+								String[] ord = table.IndexFilesName.get(q).split("_");
+								Object o1 = htblColNameValue.get(ord[1]);
+								Object o2 = htblColNameValue.get(ord[2]);
+								Object o3 = htblColNameValue.get(ord[3]);
+								oct.insert(o1, o2, o3, fil);
+								serializeIndex(oct, table.IndexFilesName.get(q));
+							}
 							serialize(p, fil);///////////////////////////////////////////////
 							serializeTable(table, "src/resources/data/" + table.getName() + ".class");
 							redistributeIns(table);
@@ -668,6 +842,17 @@ public class DBApp {
 					page.tuples.add(p.tuples.get(p.tuples.size() - 1));
 					p.tuples.remove(p.tuples.size() - 1);
 
+					for (int q = 0; q <table.IndexFilesName.size() ; q++) {
+						Octree oct = deserializeIndex(table.IndexFilesName.get(q));
+						String[] ord = table.IndexFilesName.get(q).split("_");
+						Object o1 = p.tuples.get(p.tuples.size() - 1).get(ord[1]);
+						Object o2 = p.tuples.get(p.tuples.size() - 1).get(ord[2]);
+						Object o3 = p.tuples.get(p.tuples.size() - 1).get(ord[3]);
+						oct.remove(o1, o2, o3, f);
+						oct.insert(o1, o2, o3, fileName);
+						serializeIndex(oct, table.IndexFilesName.get(q));
+					}
+
 					//int num = newCount+1;/////////////////////////////////////////////////////////////////////////////////
 					//String fi = table.serializedFilesName.get(i+1);
 					serialize(page, fileName);
@@ -687,6 +872,17 @@ public class DBApp {
 					Page next = deserialize(fi);
 					next.tuples.insertElementAt(p.tuples.get(p.tuples.size() - 1), 0);
 					p.tuples.remove(p.tuples.size() - 1);
+
+					for (int q = 0; q <table.IndexFilesName.size() ; q++) {
+						Octree oct = deserializeIndex(table.IndexFilesName.get(q));
+						String[] ord = table.IndexFilesName.get(q).split("_");
+						Object o1 = p.tuples.get(p.tuples.size() - 1).get(ord[1]);
+						Object o2 = p.tuples.get(p.tuples.size() - 1).get(ord[2]);
+						Object o3 = p.tuples.get(p.tuples.size() - 1).get(ord[3]);
+						oct.remove(o1, o2, o3, f);
+						oct.insert(o1, o2, o3, fi);
+						serializeIndex(oct, table.IndexFilesName.get(q));
+					}
 
 					Page erase = null;
 					serialize(erase, f);////////////////////////////////////////////////////
@@ -813,7 +1009,7 @@ public class DBApp {
 
 		if ((htblColNameValue.containsKey(pk))) {
 
-			for (int i = 0; i < table.rows.size(); i++) { //make sure that we use binary search on content of pages not on pages themselves
+			for (int i = 0; i < table.rows.size(); i++) {
 
 
 				String f = table.serializedFilesName.get(i);
@@ -837,6 +1033,15 @@ public class DBApp {
 
 						if (countKeys.get() == htblColNameValue.size()) {
 							p.tuples.remove(mid1);
+							for (int q = 0; q <table.IndexFilesName.size() ; q++) {
+								Octree oct = deserializeIndex(table.IndexFilesName.get(q));
+								String[] ord = table.IndexFilesName.get(q).split("_");
+								Object o1 = p.tuples.get(mid1).get(ord[1]);
+								Object o2 = p.tuples.get(mid1).get(ord[2]);
+								Object o3 = p.tuples.get(mid1).get(ord[3]);
+								oct.remove(o1, o2, o3, f);
+								serializeIndex(oct, table.IndexFilesName.get(q));
+							}
 							if (p.tuples.isEmpty()) {
 								table.rows.remove(i);//////////////////////////////////////////////////////////////////
 								table.serializedFilesName.remove(i);
@@ -880,6 +1085,15 @@ public class DBApp {
 				});
 				if (countKeys.get() == htblColNameValue.size()) {
 					p.tuples.remove(j);
+					for (int q = 0; q <table.IndexFilesName.size() ; q++) {
+						Octree oct = deserializeIndex(table.IndexFilesName.get(q));
+						String[] ord = table.IndexFilesName.get(q).split("_");
+						Object o1 = p.tuples.get(j).get(ord[1]);
+						Object o2 = p.tuples.get(j).get(ord[2]);
+						Object o3 = p.tuples.get(j).get(ord[3]);
+						oct.remove(o1, o2, o3, f);
+						serializeIndex(oct, table.IndexFilesName.get(q));
+					}
 					j--;
 					if (p.tuples.isEmpty()) {
 						table.rows.remove(i);
@@ -910,7 +1124,7 @@ public class DBApp {
 		htblColNameMax.put("id", "100000000");
 		htblColNameMin.put("name", "a");
 		htblColNameMax.put("name", "zzzzzzzzzzzzzzzzzzzzzzz");
-		htblColNameMin.put("gpa", "99.9999999999999");
+		htblColNameMin.put("gpa", "0.0");
 		htblColNameMax.put("gpa", "100.0");
 		//dbApp.createTable(strTableName, "id", htblColNameType, htblColNameMin, htblColNameMax);
 ////
@@ -930,11 +1144,11 @@ public class DBApp {
 		htblColNameMax1.put("gpa1", "100.0");
 		//dbApp.createTable(strTableName1, "id1", htblColNameType1, htblColNameMin1, htblColNameMax1);
 
-		//dbApp.createIndex(strTableName1,new String[]{"id1","name1","gpa1"});
+		dbApp.createIndex(strTableName,new String[]{"id","name","gpa"});
 
-		System.out.println(hashString("abdel")+hashString("rahma")+hashString("n ahm")+hashString("ed ah")+hashString("med"));
-		System.out.println(hashString("kzzz")+hashString("zzzzz")+hashString("zzzzz")+hashString("zzzzz")+hashString("zzz"));
-		System.out.println(hashString("ziad")+hashString("tamer")+hashString("zzzzz")+hashString("zzzzz")+hashString("zzz "));
+//		System.out.println(hashString("abdel")+hashString("rahma")+hashString("n ahm")+hashString("ed ah")+hashString("med"));
+//		System.out.println(hashString("kzzz")+hashString("zzzzz")+hashString("zzzzz")+hashString("zzzzz")+hashString("zzz"));
+//		System.out.println(hashString("ziad")+hashString("tamer")+hashString("zzzzz")+hashString("zzzzz")+hashString("zzz "));
 
 //		System.out.println(hashString2("abdel")+hashString2("rahma")+hashString2("n ahm")+hashString2("ed ah")+hashString2("med"));
 //		System.out.println(hashString2("zbaaa")+hashString2("aaaaa")+hashString2("aaaaa")+hashString2("aaaaa")+hashString2("aaa"));
@@ -944,11 +1158,11 @@ public class DBApp {
 //
 //////
 //////
-		Hashtable htblColNameValue5 = new Hashtable( );
-		htblColNameValue5.put("id", new Integer( 2343429 ));
-		htblColNameValue5.put("name", new String("zzzzzzzzzzzzzzzzzzzzzzza") );
-		htblColNameValue5.put("gpa", new Double( 0.95 ) );
-		//dbApp.insertIntoTable( strTableName , htblColNameValue5 );
+//		Hashtable htblColNameValue5 = new Hashtable( );
+//		htblColNameValue5.put("id", new Integer( 2343429 ));
+//		htblColNameValue5.put("name", new String("fgh") );
+//		htblColNameValue5.put("gpa", new Double( 0.95 ) );
+//		dbApp.insertIntoTable( strTableName , htblColNameValue5 );
 ////
 //		Hashtable htblColNameValue = new Hashtable( );
 //		htblColNameValue.put("id", new Integer( 2343432 ));
@@ -981,8 +1195,8 @@ public class DBApp {
 //
 //		Hashtable htblColNameVal = new Hashtable( );
 ////		htblColNameVal.put("id", new Integer( 2343428 ));
-////		htblColNameVal.put("name", new String("Ahmed" ) );
-//		htblColNameVal.put("gpa", new Double( 55.0 ) );
+//		htblColNameVal.put("name", new String("fgh" ) );
+////		htblColNameVal.put("gpa", new Double( 55.0 ) );
 //		dbApp.deleteFromTable( strTableName , htblColNameVal );
 ////
 //////		Hashtable htblColNameValue32 = new Hashtable( );
@@ -1008,7 +1222,7 @@ public class DBApp {
 //		Hashtable update = new Hashtable( );
 //		update.put("name", new String("test was Ahmed" ) );
 //		update.put("gpa", new Double(55.0) );
-//		dbApp.updateTable(strTableName, "2343429", update);
+//		dbApp.updateTable(strTableName, "2343432", update);
 //
 //		Hashtable htblColNameValu = new Hashtable( );
 //		htblColNameValu.put("name", new String("test was Ahmed" ) );
@@ -1032,42 +1246,42 @@ public class DBApp {
 //		dbApp.insertIntoTable( strTableName , htblColNameValue66 );
 
 
-//		Table t = dbApp.deserializeTable("resources/data/"+strTableName+".class");
-////		System.out.println(t.rows.size());
-//		for(int i = 0;i < t.rows.size();i++) {
-//
-//			String f = t.serializedFilesName.get(i);
-//			Page p = dbApp.deserialize(f);
-//			//Page p = t.rows.get(i);
-//			for(int j = 0;j<p.tuples.size();j++) {
-//				Hashtable<String,Object> h = p.tuples.get(j);
-//				System.out.println(h);
-//			}
-//			System.out.println();
-//		}
+		Table t = dbApp.deserializeTable("src/resources/data/"+strTableName+".class");
+//		System.out.println(t.rows.size());
+		for(int i = 0;i < t.rows.size();i++) {
+
+			String f = t.serializedFilesName.get(i);
+			Page p = dbApp.deserialize(f);
+			//Page p = t.rows.get(i);
+			for(int j = 0;j<p.tuples.size();j++) {
+				Hashtable<String,Object> h = p.tuples.get(j);
+				System.out.println(h);
+			}
+			System.out.println();
+		}
 ////		System.out.println();
 
-		SimpleDateFormat sdformat = new SimpleDateFormat("yyyy-MM-dd");
-
-		Date date1 = new Date(); // Replace this with your own Date object
-		Date date2 = new Date(); // Replace this with your own Date object
-
-		date1 = sdformat.parse("2002-01-01");
-		date2 = sdformat.parse("2004-01-01");
-
-
-
-// Convert Date objects to LocalDate objects
-
-
-		SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
-		long diffInDays = ChronoUnit.DAYS.between(date1.toInstant(), date2.toInstant());
-		Date midDate = new Date(date1.getTime() + diffInDays / 2 * 24L * 60L * 60L * 1000L);
-		String midDateStr = dateFormat.format(midDate);
-
-		System.out.println(midDateStr); // Output the midpoint date
-
-		//System.out.println(midDateAsDate); // Output the midpoint date
+//		SimpleDateFormat sdformat = new SimpleDateFormat("yyyy-MM-dd");
+//
+//		Date date1 = new Date(); // Replace this with your own Date object
+//		Date date2 = new Date(); // Replace this with your own Date object
+//
+//		date1 = sdformat.parse("2002-01-01");
+//		date2 = sdformat.parse("2004-01-01");
+//
+//
+//
+//// Convert Date objects to LocalDate objects
+//
+//
+//		SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+//		long diffInDays = ChronoUnit.DAYS.between(date1.toInstant(), date2.toInstant());
+//		Date midDate = new Date(date1.getTime() + diffInDays / 2 * 24L * 60L * 60L * 1000L);
+//		String midDateStr = dateFormat.format(midDate);
+//
+//		System.out.println(midDateStr); // Output the midpoint date
+//
+//		//System.out.println(midDateAsDate); // Output the midpoint date
 
 
 
