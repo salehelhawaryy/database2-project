@@ -20,7 +20,7 @@ public class OctPoint {
         this.x = x;
         this.y = y;
         this.z = z;
-        object=object;
+        this.object=object;
     }
 
 //    public OctPoint(){

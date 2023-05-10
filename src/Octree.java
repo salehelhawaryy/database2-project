@@ -10,6 +10,8 @@ public class Octree {
     OctPoint topBoundary,BottomBoundary;
     Octree[] children= new Octree[8];
 
+    boolean hasDuplicates=false;
+    boolean canInsert=true;
     int limit;
 
 
@@ -17,7 +19,7 @@ public class Octree {
     public Octree(Object x1,Object y1,Object z1,Object x2,Object y2,Object z2,int limit){
         this.topBoundary=new OctPoint(x1,y1,z1,null);
         this.BottomBoundary=new OctPoint(x2,y2,z2, null);
-        limit=limit;
+        this.limit=limit;
     }
 
 //    public String StringMid(String str1, String str2) {
@@ -151,7 +153,7 @@ public class Octree {
         }
     }
 
-    public void split() throws DBAppException {
+    public void split(OctPoint newInsert) throws DBAppException {
         Object midx;
         Object midy;
         Object midz;
@@ -170,38 +172,47 @@ public class Octree {
         children[6]=new Octree(midx,midy,this.topBoundary.getZ(),this.BottomBoundary.getX(), this.BottomBoundary.getY(), midz, this.limit);
         children[7]=new Octree(midx,midy,midz,this.BottomBoundary.getX(), this.BottomBoundary.getY(), this.BottomBoundary.getZ(), this.limit);
 
-        for (int i = 0; i < this.points.size(); i++) {
-            OctPoint current = points.get(i);
+        for (int i = 0; i <= this.points.size(); i++) {
+            int pos;
+            OctPoint current ;
+            if(i==this.points.size())
+                current=newInsert;
+            else current=this.points.get(i);
             int xCompare = compareObject(current.getX(), midx);
             int yCompare = compareObject(current.getY(), midy);
             int zCompare = compareObject(current.getZ(), midz);
             if(xCompare <= 0){
                 if(yCompare <= 0){
                     if(zCompare <= 0)
-                        children[0].insert();
+                        pos=0;
                     else
-                        pos = OctLocations.TopLeftBottom.getNumber();
+                        pos = 1;
                 }else{
-                    if(z <= midz)
-                        pos = OctLocations.BottomLeftFront.getNumber();
+                    if(zCompare <= 0)
+                        pos = 2;
                     else
-                        pos = OctLocations.BottomLeftBack.getNumber();
+                        pos = 3;
                 }
             }else{
-                if(y <= midy){
-                    if(z <= midz)
-                        pos = OctLocations.TopRightFront.getNumber();
+                if(yCompare <= 0){
+                    if(zCompare <= 0)
+                        pos = 4;
                     else
-                        pos = OctLocations.TopRightBottom.getNumber();
+                        pos = 5;
                 }else {
-                    if(z <= midz)
-                        pos = OctLocations.BottomRightFront.getNumber();
+                    if(zCompare <= 0)
+                        pos = 6;
                     else
-                        pos = OctLocations.BottomRightBack.getNumber();
+                        pos = 7;
                 }
             }
-
+            children[pos].insert(current.getX(),current.getY(),current.getZ(),current.getObject());
+            if(i!=this.points.size()) {
+                this.points.remove(current);
+                i--;
+            }
         }
+        this.canInsert=false;
     }
 
     public void insert(Object x,Object y,Object z, Object data) throws DBAppException {
@@ -247,14 +258,242 @@ public class Octree {
         }
 
         OctPoint insertion = new OctPoint(x,y,z,data);
-        if(points.size()<limit){
-            points.add(insertion);
+        if(points.size()<limit && canInsert){
+           points.add(insertion);
             return;
         }
 
-        split();
+        if(this.children[0]==null){
+            split(insertion);
+        }
+        else{
+           Object midx = getMid(topBoundary.getX(), BottomBoundary.getX());
+           Object midy = getMid(topBoundary.getY(), BottomBoundary.getY());
+           Object midz = getMid(topBoundary.getZ(), BottomBoundary.getZ());
+
+           int xCompare = compareObject(insertion.getX(), midx);
+           int yCompare = compareObject(insertion.getY(), midy);
+           int zCompare = compareObject(insertion.getZ(), midz);
+           int pos;
+
+            if(xCompare <= 0){
+                if(yCompare <= 0){
+                    if(zCompare <= 0)
+                        pos=0;
+                    else
+                        pos = 1;
+                }else{
+                    if(zCompare <= 0)
+                        pos = 2;
+                    else
+                        pos = 3;
+                }
+            }else{
+                if(yCompare <= 0){
+                    if(zCompare <= 0)
+                        pos = 4;
+                    else
+                        pos = 5;
+                }else {
+                    if(zCompare <= 0)
+                        pos = 6;
+                    else
+                        pos = 7;
+                }
+            }
+            children[pos].insert(insertion.getX(),insertion.getY(),insertion.getZ(),insertion.getObject());
+        }
 
         //if()
+
+    }
+
+    public void remove(Object x,Object y,Object z) throws DBAppException {
+        if(this.canInsert){
+            for(int i=0;i<this.points.size();i++){
+                Object x_=points.get(i).getX();
+                Object y_=points.get(i).getY();
+                Object z_=points.get(i).getZ();
+                if(x_.equals(x) && y_.equals(y) && z_.equals(z))
+                     this.points.remove(this.points.get(i));
+            }
+        }
+        else{
+            Object midx = getMid(topBoundary.getX(), BottomBoundary.getX());
+            Object midy = getMid(topBoundary.getY(), BottomBoundary.getY());
+            Object midz = getMid(topBoundary.getZ(), BottomBoundary.getZ());
+
+            int xCompare = compareObject(x, midx);
+            int yCompare = compareObject(y, midy);
+            int zCompare = compareObject(z, midz);
+            int pos;
+
+            if(xCompare <= 0){
+                if(yCompare <= 0){
+                    if(zCompare <= 0)
+                        pos=0;
+                    else
+                        pos = 1;
+                }else{
+                    if(zCompare <= 0)
+                        pos = 2;
+                    else
+                        pos = 3;
+                }
+            }else{
+                if(yCompare <= 0){
+                    if(zCompare <= 0)
+                        pos = 4;
+                    else
+                        pos = 5;
+                }else {
+                    if(zCompare <= 0)
+                        pos = 6;
+                    else
+                        pos = 7;
+                }
+            }
+             this.children[pos].remove(x, y, z);
+        }
+    }
+
+    public void update(Object x,Object y,Object z,Object newData) throws DBAppException {
+        if(this.canInsert){
+            for(int i=0;i<this.points.size();i++){
+                Object x_=points.get(i).getX();
+                Object y_=points.get(i).getY();
+                Object z_=points.get(i).getZ();
+                if(x_.equals(x) && y_.equals(y) && z_.equals(z))
+                    this.points.get(i).setObject(newData);
+            }
+        }
+        else{
+            Object midx = getMid(topBoundary.getX(), BottomBoundary.getX());
+            Object midy = getMid(topBoundary.getY(), BottomBoundary.getY());
+            Object midz = getMid(topBoundary.getZ(), BottomBoundary.getZ());
+
+            int xCompare = compareObject(x, midx);
+            int yCompare = compareObject(y, midy);
+            int zCompare = compareObject(z, midz);
+            int pos;
+
+            if(xCompare <= 0){
+                if(yCompare <= 0){
+                    if(zCompare <= 0)
+                        pos=0;
+                    else
+                        pos = 1;
+                }else{
+                    if(zCompare <= 0)
+                        pos = 2;
+                    else
+                        pos = 3;
+                }
+            }else{
+                if(yCompare <= 0){
+                    if(zCompare <= 0)
+                        pos = 4;
+                    else
+                        pos = 5;
+                }else {
+                    if(zCompare <= 0)
+                        pos = 6;
+                    else
+                        pos = 7;
+                }
+            }
+            this.children[pos].update(x, y, z,newData);
+        }
+    }
+
+
+    public Object get(Object x,Object y,Object z) throws DBAppException {
+        if(this.canInsert){
+            for(int i=0;i<this.points.size();i++){
+                Object x_=points.get(i).getX();
+                Object y_=points.get(i).getY();
+                Object z_=points.get(i).getZ();
+                if(x_.equals(x) && y_.equals(y) && z_.equals(z))
+                    return this.points.get(i).getObject();
+            }
+            return null;
+        }
+        else{
+            Object midx = getMid(topBoundary.getX(), BottomBoundary.getX());
+            Object midy = getMid(topBoundary.getY(), BottomBoundary.getY());
+            Object midz = getMid(topBoundary.getZ(), BottomBoundary.getZ());
+
+            int xCompare = compareObject(x, midx);
+            int yCompare = compareObject(y, midy);
+            int zCompare = compareObject(z, midz);
+            int pos;
+
+            if(xCompare <= 0){
+                if(yCompare <= 0){
+                    if(zCompare <= 0)
+                        pos=0;
+                    else
+                        pos = 1;
+                }else{
+                    if(zCompare <= 0)
+                        pos = 2;
+                    else
+                        pos = 3;
+                }
+            }else{
+                if(yCompare <= 0){
+                    if(zCompare <= 0)
+                        pos = 4;
+                    else
+                        pos = 5;
+                }else {
+                    if(zCompare <= 0)
+                        pos = 6;
+                    else
+                        pos = 7;
+                }
+            }
+            return this.children[pos].get(x, y, z);
+        }
+
+    }
+
+
+    public static void main(String [] args) throws DBAppException {
+        Octree oct = new Octree(1,1,1,7,7,7,1);
+
+//        oct.insert(1,1,1,"page 1");
+//        oct.insert(1,1,1,"page 2");
+//        oct.insert(1,1,1,"page 3");
+//        oct.insert(1,1,1,"page 4");
+        oct.insert(5,1,1,"page 5");
+        oct.insert(5,1,5,"page 6");
+        oct.insert(5,5,1,"page 7");
+        oct.insert(5,5,5,"page 8");
+        oct.insert(6,1,3,"page 81");
+        oct.insert(6,1,2,"page 9");
+        oct.insert(6,1,1,"page 11");
+//
+
+
+        System.out.println(oct.children[0].points.size());
+        System.out.println(oct.children[1].points.size());
+        System.out.println(oct.children[2].points.size());
+        System.out.println(oct.children[3].points.size());
+        System.out.println(oct.children[4].points.size());
+        System.out.println(oct.children[5].points.size());
+        System.out.println(oct.children[6].points.size());
+        System.out.println(oct.children[7].points.size());
+
+        System.out.println(oct.get(6,1,3));
+
+//        if(oct.get(1,1,1) instanceof Vector<?>){
+//            Vector<OctPoint> v = (Vector)oct.get(1,1,1) ;
+//            for(int i=0;i<v.size();i++){
+//                System.out.println(v.get(i).getObject());
+//            }
+//        }
+
 
     }
 
