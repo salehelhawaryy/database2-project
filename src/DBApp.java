@@ -848,8 +848,8 @@ public class DBApp {
 						Object o1 = p.tuples.get(p.tuples.size() - 1).get(ord[1]);
 						Object o2 = p.tuples.get(p.tuples.size() - 1).get(ord[2]);
 						Object o3 = p.tuples.get(p.tuples.size() - 1).get(ord[3]);
-						oct.remove(o1, o2, o3, f);
-						oct.insert(o1, o2, o3, fileName);
+//						oct.remove(o1, o2, o3, f);
+						oct.update(o1, o2, o3, fileName);
 						serializeIndex(oct, table.IndexFilesName.get(q));
 					}
 
@@ -962,6 +962,15 @@ public class DBApp {
 				} else if (compare == 0) {
 					int finalMid = mid1;
 					Page finalP = p;
+					for (int q = 0; q <table.IndexFilesName.size() ; q++) {
+						Octree oct = deserializeIndex(table.IndexFilesName.get(q));
+						String[] ord = table.IndexFilesName.get(q).split("_");
+						Object o1 = p.tuples.get(mid1).get(ord[1]);
+						Object o2 = p.tuples.get(mid1).get(ord[2]);
+						Object o3 = p.tuples.get(mid1).get(ord[3]);
+						oct.remove(o1, o2, o3, f);
+						serializeIndex(oct, table.IndexFilesName.get(q));
+					}
 					p.tuples.get(mid1).forEach((k, v) -> {
 						htblColNameValue.forEach((k2, v2) -> {
 							if (k.compareTo(k2) == 0) {
@@ -972,6 +981,15 @@ public class DBApp {
 					});
 					Page erase = null;
 					serialize(erase, f);///////////////////////////////////////////////////////////////
+					for (int q = 0; q <table.IndexFilesName.size() ; q++) {
+						Octree oct = deserializeIndex(table.IndexFilesName.get(q));
+						String[] ord = table.IndexFilesName.get(q).split("_");
+						Object o1 = p.tuples.get(mid1).get(ord[1]);
+						Object o2 = p.tuples.get(mid1).get(ord[2]);
+						Object o3 = p.tuples.get(mid1).get(ord[3]);
+						oct.insert(o1, o2, o3, f);
+						serializeIndex(oct, table.IndexFilesName.get(q));
+					}
 					serialize(p, f);//////////////////////////////////////////////////////////////////
 					serializeTable(table, "src/resources/data/" + table.getName() + ".class");
 

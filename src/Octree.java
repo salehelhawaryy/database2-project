@@ -266,15 +266,20 @@ public class Octree implements Serializable {
             {
                 if(points.get(i).getX().equals(x) && points.get(i).getY().equals(y) && points.get(i).getZ().equals(z))
                 {
+                    //System.out.println(data+" "+i);
                     if(points.get(i).hasDuplicates) {
+                       //System.out.println(points.get(i).getObject());
                         Vector<Object> vec = (Vector) points.get(i).getObject();
-                        vec.add(insertion);
+                        vec.add(insertion.getObject());
                         return;
                     }
                     else {
+                        //System.out.println("el else "+ data+" "+i);
                         Vector<Object> newVec = new Vector<Object>();
+
                         newVec.add(points.get(i).getObject());
-                        newVec.add(insertion);
+                        newVec.add(insertion.getObject());
+                        points.get(i).setObject(newVec);
                         points.get(i).hasDuplicates = true;
                         return;
                     }
@@ -345,7 +350,19 @@ public class Octree implements Serializable {
                 Object y_=points.get(i).getY();
                 Object z_=points.get(i).getZ();
                 Object obj_ = points.get(i).getObject();
-                if(x_.equals(x) && y_.equals(y) && z_.equals(z) && obj_.equals(obj))///////////////rage3 ma3 saleh
+                if(x_.equals(x) && y_.equals(y) && z_.equals(z) && points.get(i).hasDuplicates) {
+                    Vector<Object> vec = (Vector) points.get(i).getObject();
+                    for (int j = 0; j < vec.size() ; j++) {
+                        if(vec.get(j).equals(obj)) {
+                            vec.remove(j);
+                            j--;
+                        }
+                    }
+                    if(vec.isEmpty()) {
+                        points.remove(i);
+                    }
+                }
+                else if(x_.equals(x) && y_.equals(y) && z_.equals(z) && obj_.equals(obj))///////////////rage3 ma3 saleh
                      this.points.remove(this.points.get(i));
             }
         }
@@ -384,8 +401,8 @@ public class Octree implements Serializable {
                         pos = 7;
                 }
             }
-            Object o = this.children[pos].get(x,y,z);
-             this.children[pos].remove(x, y, z, o);
+            //Object o = this.children[pos].get(x,y,z);
+             this.children[pos].remove(x, y, z, obj);
         }
     }
 
@@ -492,39 +509,64 @@ public class Octree implements Serializable {
 
 
     public static void main(String [] args) throws DBAppException {
-        Octree oct = new Octree(1,1,1,7,7,7,1);
+        Octree oct = new Octree(1,1,1,7,7,7,2);
 
-//        oct.insert(1,1,1,"page 1");
-//        oct.insert(1,1,1,"page 2");
-//        oct.insert(1,1,1,"page 3");
+        oct.insert(1,1,1,"page 33");
+        oct.insert(1,1,1,"page 33");
+        oct.insert(1,1,1,"page 33");
 //        oct.insert(1,1,1,"page 4");
-        oct.insert(5,1,1,"page 5");
-        oct.insert(5,1,5,"page 6");
-        oct.insert(5,5,1,"page 7");
-        oct.insert(5,5,5,"page 8");
-        oct.insert(6,1,3,"page 81");
-        oct.insert(6,1,2,"page 9");
-        oct.insert(6,1,1,"page 11");
+//        oct.insert(1,1,1,"page 11");
+//        oct.insert(1,1,1,"page 21");
+//        oct.insert(1,1,1,"pag 31");
+//        oct.insert(1,1,1,"page 14");
+//        oct.insert(1,1,1,"page 12");
+//        oct.insert(1,1,1,"page 22");
+//        oct.insert(1,1,1,"pag 32");
+//        oct.insert(1,1,1,"page 24");
+        oct.insert(1,1,3,"page 24");
+//
+//        oct.insert(1,1,3,"page 24");
+//
+//        oct.insert(1,1,4,"page 24");
+//
+//        oct.insert(1,1,3,"page 24");
+//
+//        oct.insert(1,1,3,"page 24");
+//
+//        oct.insert(1,1,3,"page 24");
+//
+//        oct.insert(1,1,3,"page 24");
+//
+//        oct.insert(1,1,3,"page 24");
+//
+        oct.remove(1,1,1,"page 33");
+//        oct.insert(5,1,1,"page 5");
+//        oct.insert(5,1,5,"page 6");
+//        oct.insert(5,5,1,"page 7");
+//        oct.insert(5,5,5,"page 8");
+//        oct.insert(6,1,3,"page 81");
+//        oct.insert(6,1,2,"page 9");
+//        oct.insert(6,1,1,"page 11");
 //
 
 
-        System.out.println(oct.children[0].points.size());
-        System.out.println(oct.children[1].points.size());
-        System.out.println(oct.children[2].points.size());
-        System.out.println(oct.children[3].points.size());
-        System.out.println(oct.children[4].points.size());
-        System.out.println(oct.children[5].points.size());
-        System.out.println(oct.children[6].points.size());
-        System.out.println(oct.children[7].points.size());
+//        System.out.println(oct.children[0].points.size());
+//        System.out.println(oct.children[1].points.size());
+//        System.out.println(oct.children[2].points.size());
+//        System.out.println(oct.children[3].points.size());
+//        System.out.println(oct.children[4].points.size());
+//        System.out.println(oct.children[5].points.size());
+//        System.out.println(oct.children[6].points.size());
+//        System.out.println(oct.children[7].points.size());
 
-        System.out.println(oct.get(6,1,3));
+        System.out.println(oct.get(1,1,1));
 
-//        if(oct.get(1,1,1) instanceof Vector<?>){
-//            Vector<OctPoint> v = (Vector)oct.get(1,1,1) ;
-//            for(int i=0;i<v.size();i++){
-//                System.out.println(v.get(i).getObject());
-//            }
-//        }
+        if(oct.get(1,1,1) instanceof Vector<?>){
+            Vector<Object> v = (Vector)oct.get(1,1,1) ;
+            for(int i=0;i<v.size();i++){
+                System.out.println(v.get(i));
+            }
+        }
 
 
     }
