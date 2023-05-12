@@ -363,7 +363,7 @@ public class Octree implements Serializable {
                     }
                 }
                 else if(x_.equals(x) && y_.equals(y) && z_.equals(z) && obj_.equals(obj))///////////////rage3 ma3 saleh
-                     this.points.remove(this.points.get(i));
+                    this.points.remove(this.points.get(i));
             }
         }
         else{
@@ -402,9 +402,66 @@ public class Octree implements Serializable {
                 }
             }
             //Object o = this.children[pos].get(x,y,z);
-             this.children[pos].remove(x, y, z, obj);
+            this.children[pos].remove(x, y, z, obj);
         }
     }
+
+    public Object removeWithoutObject(Object x,Object y,Object z) throws DBAppException {
+        if (this.canInsert) {
+            Object res = null;
+            for (int i = 0; i < this.points.size(); i++) {
+                Object x_ = points.get(i).getX();
+                Object y_ = points.get(i).getY();
+                Object z_ = points.get(i).getZ();
+
+                if (x_.equals(x) && y_.equals(y) && z_.equals(z)) {
+                    res = this.points.get(i).getObject();
+                    this.points.remove(this.points.get(i));
+
+                }
+
+            }
+            return res;
+        } else {
+            Object midx = getMid(topBoundary.getX(), BottomBoundary.getX());
+            Object midy = getMid(topBoundary.getY(), BottomBoundary.getY());
+            Object midz = getMid(topBoundary.getZ(), BottomBoundary.getZ());
+
+            int xCompare = compareObject(x, midx);
+            int yCompare = compareObject(y, midy);
+            int zCompare = compareObject(z, midz);
+            int pos;
+
+            if (xCompare <= 0) {
+                if (yCompare <= 0) {
+                    if (zCompare <= 0)
+                        pos = 0;
+                    else
+                        pos = 1;
+                } else {
+                    if (zCompare <= 0)
+                        pos = 2;
+                    else
+                        pos = 3;
+                }
+            } else {
+                if (yCompare <= 0) {
+                    if (zCompare <= 0)
+                        pos = 4;
+                    else
+                        pos = 5;
+                } else {
+                    if (zCompare <= 0)
+                        pos = 6;
+                    else
+                        pos = 7;
+                }
+            }
+            //Object o = this.children[pos].get(x,y,z);
+            return this.children[pos].removeWithoutObject(x, y, z);
+        }
+    }
+
 
     public void update(Object x,Object y,Object z,Object newData) throws DBAppException {
         if(this.canInsert){

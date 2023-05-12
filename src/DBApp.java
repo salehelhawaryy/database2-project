@@ -10,6 +10,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 
+
 public class DBApp {
 
 	static boolean ranOnce = false;
@@ -456,7 +457,9 @@ public class DBApp {
 			}
 		}
 		table.IndexFilesName.add(IndexName);
+
 		serializeIndex(oct, IndexName);
+		serializeTable(table, "src/resources/data/" + strTableName + ".class");
 
 		//update csv
 		File f = new File("src/resources/" + "metadata.csv");
@@ -879,8 +882,8 @@ public class DBApp {
 						Object o1 = p.tuples.get(p.tuples.size() - 1).get(ord[1]);
 						Object o2 = p.tuples.get(p.tuples.size() - 1).get(ord[2]);
 						Object o3 = p.tuples.get(p.tuples.size() - 1).get(ord[3]);
-						oct.remove(o1, o2, o3, f);
-						oct.insert(o1, o2, o3, fi);
+//						oct.remove(o1, o2, o3, f);
+						oct.update(o1, o2, o3, fi);
 						serializeIndex(oct, table.IndexFilesName.get(q));
 					}
 
@@ -1023,6 +1026,18 @@ public class DBApp {
 			throw new DBAppException();
 		}
 
+//		for (int i = 0; i < table.IndexFilesName.size() ; i++) {
+//			Octree oct = deserializeIndex(table.IndexFilesName.get(i));
+//			String[] ord = table.IndexFilesName.get(i).split("_");
+//
+//			Object o1 = p.tuples.get(mid1).get(ord[1]);
+//			Object o2 = p.tuples.get(mid1).get(ord[2]);
+//			Object o3 = p.tuples.get(mid1).get(ord[3]);
+//			oct.remove(o1, o2, o3, f);
+//			serializeIndex(oct, table.IndexFilesName.get(q));
+//
+//		}
+
 		String pk = table.getPK();
 
 		if ((htblColNameValue.containsKey(pk))) {
@@ -1133,26 +1148,169 @@ public class DBApp {
 
 
 
-	public void selectFromTable(SQLTerm[] arrSQLTerms, String[] strarrOperators) throws DBAppException{
+	public Iterator selectFromTable(SQLTerm[] arrSQLTerms, String[] strarrOperators) throws DBAppException{
 
-	//	System.out.println("kos");
+		for (int i = 0; i < arrSQLTerms.length ; i++) {
+			SQLTerm s = arrSQLTerms[i];
+			Hashtable<String, Object> htbl = new Hashtable<String, Object>();
+			htbl.put(s._strColumnName, s._objValue);
+			boolean check1 = checkcallname(s._strTableName, htbl);
+			if (!check1) {
+				throw new DBAppException();
+			}
+
+		}
+
 		Table[] tableNames=new Table[arrSQLTerms.length];
 
-//			for(int i=0;i<arrSQLTerms.length;i++){
-//				tableNames[i]=deserializeTable("src/resources/data/" + arrSQLTerms[i]._strTableName + ".class");
-//			}
+		for(int i=0;i<arrSQLTerms.length;i++){
+			tableNames[i]=deserializeTable("src/resources/data/" + arrSQLTerms[i]._strTableName + ".class");
+		}
+		boolean index = false;
+		Vector<Vector<Hashtable<String, Object>>> vecvec = new Vector<Vector<Hashtable<String, Object>>>();
+		for (int i = 0; i < arrSQLTerms.length ; i++) {
+			int w = i+2;
+			if(w < arrSQLTerms.length) {
+				index = checkIndex(arrSQLTerms[i], arrSQLTerms[i+1], arrSQLTerms[i+2]);
+			}
+			if(index) {
+				System.out.println("a7a big old titties");
+				i=i+3;
+				index = false;
+			}
+			else {
+				Vector<Hashtable<String, Object>> vec = getTuples(arrSQLTerms[i]);
+				vecvec.add(vec);
+			}
+		}
 
-		System.out.println(arrSQLTerms.length);
-			Arrays.sort(arrSQLTerms);
+		int count = 0;
+		while (vecvec.size() > 1) {
+			Vector<Hashtable<String, Object>> current = vecvec.get(0);
+			Vector<Hashtable<String, Object>> next = vecvec.get(1);
+			switch (strarrOperators[count]) {
+				case "OR":
+					for (int i = 0; i < next.size() ; i++) {
+						if(!current.contains(next.get(i))) {
+							current.add(next.get(i));
+						}
+					}
+					break;
+				case "AND":
+					for (int i = 0; i < current.size() ; i++) {
+						if(!next.contains(current.get(i))) {
+							current.remove(current.get(i));
+						}
+					}
+					break;
+				case "XOR":
+					for (int i = 0; i < current.size() ; i++) {
+						if(next.contains(current.get(i))) {
+							current.remove(current.get(i));
+							next.remove(current.get(i));
+						}
+					}
+					for (int i = 0; i < next.size() ; i++) {
+						if(!current.contains(next.get(i))) {
+							current.add(next.get(i));
+						}
+					}
+					break;
+				default:break;
+			}
+			vecvec.remove(next);
+			count++;
+		}
+		if(vecvec.isEmpty()) {
+			return null;
+		}
+		Iterator it = vecvec.get(0).iterator();
+		return it;
+	}
 
-			for(int i=0;i<arrSQLTerms.length;i++)
-				System.out.print(arrSQLTerms[i]._strTableName+" ");
+	private boolean checkIndex(SQLTerm arrSQLTerm, SQLTerm arrSQLTerm1, SQLTerm arrSQLTerm2) throws DBAppException {
 
+		if(arrSQLTerm._strTableName.equals(arrSQLTerm1._strTableName) && arrSQLTerm1._strTableName.equals(arrSQLTerm2._strTableName)) {
+			Table table = deserializeTable("src/resources/data/" + arrSQLTerm._strTableName + ".class");
+			for (int i = 0; i < table.IndexFilesName.size() ; i++) {
+				String index = table.IndexFilesName.get(i);
+				String[] ord = index.split("_");
+				List<String> arr = Arrays.asList(ord);
+				if(arr.contains(arrSQLTerm._strColumnName) && arr.contains(arrSQLTerm1._strColumnName) && arr.contains(arrSQLTerm2._strColumnName)) {
+					return true;
+				}
+			}
 
+		} else {
+			return false;
+		}
+		return false;
+	}
+
+	private Vector<Hashtable<String, Object>> getTuples(SQLTerm arrSQLTerm) throws DBAppException {
+		Table table = deserializeTable("src/resources/data/" + arrSQLTerm._strTableName + ".class");
+		String col = arrSQLTerm._strColumnName;
+		Object value = arrSQLTerm._objValue;
+		String op = arrSQLTerm._strOperator;
+		Vector<Hashtable<String, Object>> res = new Vector<Hashtable<String, Object>>();
+
+		for (int i = 0; i < table.rows.size(); i++) {
+			String fileName = table.serializedFilesName.get(i);
+			Page p = deserialize(fileName);
+			for (int j = 0; j < p.tuples.size() ; j++) {
+				Hashtable<String, Object> tuple = p.tuples.get(j);
+				Object target = tuple.get(col);
+				switch (op) {
+					case "=" :
+						if(target.equals(value)) {
+							res.add(tuple);
+						}
+						break;
+					case "!=":
+						if(!target.equals(value)) {
+							res.add(tuple);
+						}
+						break;
+					case "<":
+						if(compareObject1(target, value) < 0) {
+							res.add(tuple);
+						}
+						break;
+					case ">":
+						if(compareObject1(target, value) > 0) {
+							res.add(tuple);
+						}
+						break;
+					case ">=":
+						if(compareObject1(target, value) >= 0) {
+							res.add(tuple);
+						}
+						break;
+					case "<=":
+						if(compareObject1(target, value) <= 0) {
+							res.add(tuple);
+						}
+						break;
+					default:break;
+				}
+			}
+
+		}
+		return res;
 	}
 
 
-
+	public static int compareObject1(Object o1, Object o2) {
+		if(o1 instanceof String) {
+			return ((String) o1).compareTo(((String)o2));
+		} else if(o1 instanceof Double) {
+			return ((Double) o1).compareTo(((Double)o2));
+		} else if(o1 instanceof Integer) {
+			return ((Integer) o1).compareTo(((Integer)o2));
+		} else {
+			return ((Date) o1).compareTo(((Date)o2));
+		}
+	}
 
 	public static void main(String[] args) throws IOException, DBAppException, ParseException {
 		String strTableName = "Student";
@@ -1188,22 +1346,63 @@ public class DBApp {
 		//dbApp.createTable(strTableName1, "id1", htblColNameType1, htblColNameMin1, htblColNameMax1);
 
 
-		SQLTerm[] arrSQLTerms;
-		arrSQLTerms = new SQLTerm[4];
-		arrSQLTerms[0]=new SQLTerm("Student","name","=","John Noor");
+//		SQLTerm[] arrSQLTerms;
+//		arrSQLTerms = new SQLTerm[4];
+//		SQLTerm arrSQLTerms=new SQLTerm("Student","id","!=",new Integer(2343433));
+
+//		dbApp.createIndex(strTableName, new String[]{"id", "name", "gpa"});
+//
+//		SQLTerm[] arrSQLTerms;
+//		arrSQLTerms = new SQLTerm[3];
+//		arrSQLTerms[0] = new SQLTerm();
+//		arrSQLTerms[1] = new SQLTerm();
+//		arrSQLTerms[2] = new SQLTerm();
+//		arrSQLTerms[0]._strTableName = "Student";
+//		arrSQLTerms[0]._strColumnName= "name";
+//		arrSQLTerms[0]._strOperator = "=";
+//		arrSQLTerms[0]._objValue = "Ahmed";
+//		arrSQLTerms[1]._strTableName = "Student";
+//		arrSQLTerms[1]._strColumnName= "gpa";
+//		arrSQLTerms[1]._strOperator = ">";
+//		arrSQLTerms[1]._objValue = new Double( 0.0 );
+//		arrSQLTerms[2]._strTableName = "Student";
+//		arrSQLTerms[2]._strColumnName= "id";
+//		arrSQLTerms[2]._strOperator = ">";
+//		arrSQLTerms[2]._objValue = new Integer( 0 );
+//		String[]strarrOperators = new String[2];
+//		strarrOperators[0] = "AND";
+//		strarrOperators[1] = "AND";
+//
+//		Iterator it = dbApp.selectFromTable(arrSQLTerms, strarrOperators);
+//
+//		while(it.hasNext()) {
+//			System.out.println(it.next());
+//		}
+//		Table table = dbApp.deserializeTable("src/resources/data/" + strTableName + ".class");
+//		System.out.println(table.IndexFilesName.size());
 
 
-		arrSQLTerms[1]=new SQLTerm("A7a","gpa","=",new Double(1.5));
+//
+//		Vector<Hashtable<String, Object>> v = dbApp.getTuples(arrSQLTerms);
+//		for (int i = 0; i < v.size() ; i++) {
+//			System.out.println(v.get(i));
+//		}
 
-		arrSQLTerms[2]=new SQLTerm("Student","gpa","=",new Double(1.5));
+//
+//
+//		arrSQLTerms[1]=new SQLTerm("A7a","gpa","=",new Double(1.5));
+//
+//		arrSQLTerms[2]=new SQLTerm("Student","gpa","=",new Double(1.5));
+//
+//		arrSQLTerms[3]=new SQLTerm();
+//		arrSQLTerms[3]._strTableName = "Zebo";
+//		arrSQLTerms[3]._strColumnName= "gpa";
+//		arrSQLTerms[3]._strOperator = "=";
+//		arrSQLTerms[3]._objValue = new Double( 1.5 );
+//
+//		dbApp.selectFromTable(arrSQLTerms,new String[3]);
 
-		arrSQLTerms[3]=new SQLTerm();
-		arrSQLTerms[3]._strTableName = "Zebo";
-		arrSQLTerms[3]._strColumnName= "gpa";
-		arrSQLTerms[3]._strOperator = "=";
-		arrSQLTerms[3]._objValue = new Double( 1.5 );
 
-		dbApp.selectFromTable(arrSQLTerms,new String[3]);
 
 		//dbApp.createIndex(strTableName,new String[]{"id","name","gpa"});
 
@@ -1219,6 +1418,8 @@ public class DBApp {
 //
 //////
 //////
+
+
 //		Hashtable htblColNameValue5 = new Hashtable( );
 //		htblColNameValue5.put("id", new Integer( 2343429 ));
 //		htblColNameValue5.put("name", new String("fgh") );
@@ -1248,6 +1449,13 @@ public class DBApp {
 //		htblColNameValue3.put("name", new String("mohamed" ) );
 //		htblColNameValue3.put("gpa", new Double( 0.95 ) );
 //		dbApp.insertIntoTable( strTableName , htblColNameValue3 );
+//
+//
+//
+//
+//		long start = System.currentTimeMillis();
+//
+//		long end = System.currentTimeMillis();
 
 //		dbApp.createIndex(strTableName,new String[]{"id","name","gpa"});
 //		System.out.println(hashString("1995-05-31"));
