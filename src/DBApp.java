@@ -1129,6 +1129,31 @@ public class DBApp {
 		}
 	}
 
+
+
+
+
+	public void selectFromTable(SQLTerm[] arrSQLTerms, String[] strarrOperators) throws DBAppException{
+
+	//	System.out.println("kos");
+		Table[] tableNames=new Table[arrSQLTerms.length];
+
+//			for(int i=0;i<arrSQLTerms.length;i++){
+//				tableNames[i]=deserializeTable("src/resources/data/" + arrSQLTerms[i]._strTableName + ".class");
+//			}
+
+		System.out.println(arrSQLTerms.length);
+			Arrays.sort(arrSQLTerms);
+
+			for(int i=0;i<arrSQLTerms.length;i++)
+				System.out.print(arrSQLTerms[i]._strTableName+" ");
+
+
+	}
+
+
+
+
 	public static void main(String[] args) throws IOException, DBAppException, ParseException {
 		String strTableName = "Student";
 		DBApp dbApp = new DBApp();
@@ -1162,7 +1187,25 @@ public class DBApp {
 		htblColNameMax1.put("gpa1", "100.0");
 		//dbApp.createTable(strTableName1, "id1", htblColNameType1, htblColNameMin1, htblColNameMax1);
 
-		dbApp.createIndex(strTableName,new String[]{"id","name","gpa"});
+
+		SQLTerm[] arrSQLTerms;
+		arrSQLTerms = new SQLTerm[4];
+		arrSQLTerms[0]=new SQLTerm("Student","name","=","John Noor");
+
+
+		arrSQLTerms[1]=new SQLTerm("A7a","gpa","=",new Double(1.5));
+
+		arrSQLTerms[2]=new SQLTerm("Student","gpa","=",new Double(1.5));
+
+		arrSQLTerms[3]=new SQLTerm();
+		arrSQLTerms[3]._strTableName = "Zebo";
+		arrSQLTerms[3]._strColumnName= "gpa";
+		arrSQLTerms[3]._strOperator = "=";
+		arrSQLTerms[3]._objValue = new Double( 1.5 );
+
+		dbApp.selectFromTable(arrSQLTerms,new String[3]);
+
+		//dbApp.createIndex(strTableName,new String[]{"id","name","gpa"});
 
 //		System.out.println(hashString("abdel")+hashString("rahma")+hashString("n ahm")+hashString("ed ah")+hashString("med"));
 //		System.out.println(hashString("kzzz")+hashString("zzzzz")+hashString("zzzzz")+hashString("zzzzz")+hashString("zzz"));
@@ -1264,19 +1307,19 @@ public class DBApp {
 //		dbApp.insertIntoTable( strTableName , htblColNameValue66 );
 
 
-		Table t = dbApp.deserializeTable("src/resources/data/"+strTableName+".class");
+		//Table t = dbApp.deserializeTable("src/resources/data/"+strTableName+".class");
 //		System.out.println(t.rows.size());
-		for(int i = 0;i < t.rows.size();i++) {
-
-			String f = t.serializedFilesName.get(i);
-			Page p = dbApp.deserialize(f);
-			//Page p = t.rows.get(i);
-			for(int j = 0;j<p.tuples.size();j++) {
-				Hashtable<String,Object> h = p.tuples.get(j);
-				System.out.println(h);
-			}
-			System.out.println();
-		}
+//		for(int i = 0;i < t.rows.size();i++) {
+//
+//			String f = t.serializedFilesName.get(i);
+//			Page p = dbApp.deserialize(f);
+//			//Page p = t.rows.get(i);
+//			for(int j = 0;j<p.tuples.size();j++) {
+//				Hashtable<String,Object> h = p.tuples.get(j);
+//				System.out.println(h);
+//			}
+//			System.out.println();
+//		}
 ////		System.out.println();
 
 //		SimpleDateFormat sdformat = new SimpleDateFormat("yyyy-MM-dd");

@@ -559,14 +559,14 @@ public class Octree implements Serializable {
 //        System.out.println(oct.children[6].points.size());
 //        System.out.println(oct.children[7].points.size());
 
-        System.out.println(oct.get(1,1,1));
-
-        if(oct.get(1,1,1) instanceof Vector<?>){
-            Vector<Object> v = (Vector)oct.get(1,1,1) ;
-            for(int i=0;i<v.size();i++){
-                System.out.println(v.get(i));
-            }
-        }
+//        System.out.println(oct.get(1,1,1));
+//
+//        if(oct.get(1,1,1) instanceof Vector<?>){
+//            Vector<Object> v = (Vector)oct.get(1,1,1) ;
+//            for(int i=0;i<v.size();i++){
+//                System.out.println(v.get(i));
+//            }
+//        }
 
 
     }
