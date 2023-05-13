@@ -1210,11 +1210,12 @@ public class DBApp {
 							if(countKeys.get() == htblColNameValue.size()) {
 								int indexOfPage = 0;
 								for (int t = 0; t < table.serializedFilesName.size() ; t++) {
-									if(table.serializedFilesName.get(t).equals(vec.get(k).toString())) {
+									if(table.serializedFilesName.get(t).equals(vec.get(j).toString())) {
 										indexOfPage = t;
 									}
 								}
 								oct.remove(tuple.get(ord[1]),tuple.get(ord[2]),tuple.get(ord[3]),vec.get(j));
+
 								p.tuples.remove(k);
 								k--;
 
@@ -1251,7 +1252,7 @@ public class DBApp {
 							if(countKeys.get() == htblColNameValue.size()) {
 								int indexOfPage = 0;
 								for (int t = 0; t < table.serializedFilesName.size() ; t++) {
-									if(table.serializedFilesName.get(t).equals(vec.get(k).toString())) {
+									if(table.serializedFilesName.get(t).equals(vec.get(j).toString())) {
 										indexOfPage = t;
 									}
 								}
@@ -1292,7 +1293,7 @@ public class DBApp {
 							if(countKeys.get() == htblColNameValue.size()) {
 								int indexOfPage = 0;
 								for (int t = 0; t < table.serializedFilesName.size() ; t++) {
-									if(table.serializedFilesName.get(t).equals(vec.get(k).toString())) {
+									if(table.serializedFilesName.get(t).equals(vec.get(j).toString())) {
 										indexOfPage = t;
 									}
 								}
@@ -1462,7 +1463,6 @@ public class DBApp {
 				index = checkIndex(arrSQLTerms[i], arrSQLTerms[i+1], arrSQLTerms[i+2]);
 			}
 			if(index) {
-				System.out.println("a7a big old titties");
 				i=i+3;
 				index = false;
 			}
@@ -1715,13 +1715,13 @@ public class DBApp {
 
 
 //		Hashtable htblColNameValue5 = new Hashtable( );
-//		htblColNameValue5.put("id", new Integer( 2343429 ));
+//		htblColNameValue5.put("id", new Integer( 2343430 ));
 //		htblColNameValue5.put("name", new String("fgh") );
 //		htblColNameValue5.put("gpa", new Double( 0.1 ) );
 //		htblColNameValue5.put("tut", new Integer( 1 ) );
 //		htblColNameValue5.put("age", new Integer( 10 ) );
 //		dbApp.insertIntoTable( strTableName , htblColNameValue5 );
-//////
+////
 //		Hashtable htblColNameValue = new Hashtable( );
 //		htblColNameValue.put("id", new Integer( 2343432 ));
 //		htblColNameValue.put("name", new String("ahmed noor" ) );
@@ -1745,7 +1745,7 @@ public class DBApp {
 //		htblColNameValue2.put("tut", new Integer( 4 ) );
 //		htblColNameValue2.put("age", new Integer( 67 ) );
 //		dbApp.insertIntoTable( strTableName , htblColNameValue2 );
-
+//
 //		Hashtable htblColNameValue3 = new Hashtable( );
 //		htblColNameValue3.put("id", new Integer( 2343441 ));
 //		htblColNameValue3.put("name", new String("fgh" ) );
@@ -1753,8 +1753,8 @@ public class DBApp {
 //		htblColNameValue3.put("tut", new Integer( 15 ) );
 //		htblColNameValue3.put("age", new Integer( 34 ) );
 //		dbApp.insertIntoTable( strTableName , htblColNameValue3 );
+//////
 ////
-//
 //
 //
 //		long start = System.currentTimeMillis();
@@ -1775,7 +1775,7 @@ public class DBApp {
 //		htblColNameVal.put("tut", new Integer( 3 ) );
 //		htblColNameVal.put("age", new Integer( 17 ) );
 		long start = System.currentTimeMillis();
-		dbApp.deleteFromTable( strTableName , htblColNameVal );
+		//dbApp.deleteFromTable( strTableName , htblColNameVal );
 		long end = System.currentTimeMillis();
 ////
 //////		Hashtable htblColNameValue32 = new Hashtable( );
