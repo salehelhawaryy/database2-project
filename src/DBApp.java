@@ -1018,7 +1018,7 @@ public class DBApp {
 
 		boolean check = checkcallname(strTableName, htblColNameValue);
 		boolean check1 = checkDataType(strTableName, htblColNameValue);
-
+		boolean done=false;
 		if (!check) {
 			throw new DBAppException();
 		}
@@ -1026,19 +1026,138 @@ public class DBApp {
 			throw new DBAppException();
 		}
 
-//		for (int i = 0; i < table.IndexFilesName.size() ; i++) {
-//			Octree oct = deserializeIndex(table.IndexFilesName.get(i));
-//			String[] ord = table.IndexFilesName.get(i).split("_");
-//
-//			Object o1 = p.tuples.get(mid1).get(ord[1]);
-//			Object o2 = p.tuples.get(mid1).get(ord[2]);
-//			Object o3 = p.tuples.get(mid1).get(ord[3]);
-//			oct.remove(o1, o2, o3, f);
-//			serializeIndex(oct, table.IndexFilesName.get(q));
-//
-//		}
+		for (int i = 0; i < table.IndexFilesName.size() ; i++) {
+			Octree oct = deserializeIndex(table.IndexFilesName.get(i));
+			String[] ord = table.IndexFilesName.get(i).split("_");
+
+			Object o1 = htblColNameValue.get(ord[1]);
+			Object o2 = htblColNameValue.get(ord[2]);
+			Object o3 = htblColNameValue.get(ord[3]);
+			if(!o1.equals(null) && !o2.equals(null) && !o3.equals(null)){
+				Object CurrPage = oct.removeWithoutObject(o1,o2,o3);
+				Page p=deserialize(CurrPage.toString());
+				for(int j=0;j<p.tuples.size();j++){
+					Hashtable<String,Object> tuple = p.tuples.get(j);
+					if(tuple.get(ord[1]).equals(o1) && tuple.get(ord[2]).equals(o2) && tuple.get(ord[3]).equals(o3) ){
+						p.tuples.remove(tuple);
+						serialize(p,CurrPage.toString());
+						done=true;
+						serializeIndex(oct,table.IndexFilesName.get(i));
+					}
+				}
+			}
+			if(!o1.equals(null) && o2.equals(null) && o3.equals(null)){
+				Vector<Object> vec = Octree.flattenArray(oct.getX(o1));
+				for(int k=0;k<vec.size();k++){
+					Page p=deserialize(vec.get(k).toString());
+					for(int j=0;j<p.tuples.size();j++){
+						Hashtable<String,Object> tuple = p.tuples.get(j);
+						if(p.tuples.get(j).get(ord[1]).equals(o1))
+						{
+							oct.remove(tuple.get(ord[1]),tuple.get(ord[2]),tuple.get(ord[3]),vec.get(k));
+							p.tuples.remove(j);
+							j--;
+							serialize(p,vec.get(k).toString());
+							done=true;
+							serializeIndex(oct,table.IndexFilesName.get(i));
+						}
+					}
+				}
+			}
+			if(o1.equals(null) && !o2.equals(null) && o3.equals(null)){
+				Vector<Object> vec = Octree.flattenArray(oct.getY(o2));
+				for(int k=0;k<vec.size();k++){
+					Page p=deserialize(vec.get(k).toString());
+					for(int j=0;j<p.tuples.size();j++){
+						Hashtable<String,Object> tuple = p.tuples.get(j);
+						if(p.tuples.get(j).get(ord[2]).equals(o2))
+						{
+							oct.remove(tuple.get(ord[1]),tuple.get(ord[2]),tuple.get(ord[3]),vec.get(k));
+							p.tuples.remove(j);
+							j--;
+							serialize(p,vec.get(k).toString());
+							done=true;
+							serializeIndex(oct,table.IndexFilesName.get(i));
+						}
+					}
+				}
+			}
+			if(o1.equals(null) && o2.equals(null) && !o3.equals(null)){
+				Vector<Object> vec = Octree.flattenArray(oct.getZ(o3));
+				for(int k=0;k<vec.size();k++){
+					Page p=deserialize(vec.get(k).toString());
+					for(int j=0;j<p.tuples.size();j++){
+						Hashtable<String,Object> tuple = p.tuples.get(j);
+						if(p.tuples.get(j).get(ord[3]).equals(o3))
+						{
+							oct.remove(tuple.get(ord[1]),tuple.get(ord[2]),tuple.get(ord[3]),vec.get(k));
+							p.tuples.remove(j);
+							j--;
+							serialize(p,vec.get(k).toString());
+							done=true;
+							serializeIndex(oct,table.IndexFilesName.get(i));
+						}
+					}
+				}
+			}
+			if(!o1.equals(null) && !o2.equals(null) && o3.equals(null)){
+				Vector<Object> vec = Octree.flattenArray(oct.getXY(o1,o2));
+				for(int j=0;j<vec.size();j++){
+					Page p=deserialize(vec.get(j).toString());
+					for(int k=0;k<p.tuples.size();k++){
+						Hashtable<String,Object> tuple = p.tuples.get(j);
+						if(p.tuples.get(k).get(ord[1]).equals(o1) && p.tuples.get(k).get(ord[2]).equals(o2)){
+							oct.remove(tuple.get(ord[1]),tuple.get(ord[2]),tuple.get(ord[3]),vec.get(j));
+							p.tuples.remove(k);
+							k--;
+							serialize(p,vec.get(j).toString());
+							done=true;
+							serializeIndex(oct,table.IndexFilesName.get(i));
+						}
+					}
+				}
+			}
+			if(!o1.equals(null) && o2.equals(null) && !o3.equals(null)){
+				Vector<Object> vec = Octree.flattenArray(oct.getXZ(o1,o3));
+				for(int j=0;j<vec.size();j++){
+					Page p=deserialize(vec.get(j).toString());
+					for(int k=0;k<p.tuples.size();k++){
+						Hashtable<String,Object> tuple = p.tuples.get(j);
+						if(p.tuples.get(k).get(ord[1]).equals(o1) && p.tuples.get(k).get(ord[3]).equals(o3)){
+							oct.remove(tuple.get(ord[1]),tuple.get(ord[2]),tuple.get(ord[3]),vec.get(j));
+							p.tuples.remove(k);
+							k--;
+							serialize(p,vec.get(j).toString());
+							done=true;
+							serializeIndex(oct,table.IndexFilesName.get(i));
+						}
+					}
+				}
+			}
+			if(o1.equals(null) && !o2.equals(null) && !o3.equals(null)){
+				Vector<Object> vec = Octree.flattenArray(oct.getYZ(o2,o3));
+				for(int j=0;j<vec.size();j++){
+					Page p=deserialize(vec.get(j).toString());
+					for(int k=0;k<p.tuples.size();k++){
+						Hashtable<String,Object> tuple = p.tuples.get(j);
+						if(p.tuples.get(k).get(ord[2]).equals(o2) && p.tuples.get(k).get(ord[3]).equals(o3)){
+							oct.remove(tuple.get(ord[1]),tuple.get(ord[2]),tuple.get(ord[3]),vec.get(j));
+							p.tuples.remove(k);
+							k--;
+							serialize(p,vec.get(j).toString());
+							done=true;
+							serializeIndex(oct,table.IndexFilesName.get(i));
+						}
+					}
+				}
+			}
+		}
+		if(done) return;
+
+
 
 		String pk = table.getPK();
+
 
 		if ((htblColNameValue.containsKey(pk))) {
 

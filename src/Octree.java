@@ -4,6 +4,7 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.time.temporal.ChronoUnit;
 import java.util.Date;
+import java.util.Hashtable;
 import java.util.Vector;
 
 public class Octree implements Serializable {
@@ -513,6 +514,220 @@ public class Octree implements Serializable {
     }
 
 
+    public Vector<Object> getX(Object x) throws DBAppException {
+        if(this.canInsert){
+            Vector<Object> vec=new Vector<>();
+            for(int i=0;i<points.size();i++){
+                if(points.get(i).getX().equals(x))
+                    vec.add(points.get(i).getObject());
+            }
+            return vec;
+
+        }
+
+        Object midx = getMid(topBoundary.getX(), BottomBoundary.getX());
+        int xCompare = compareObject(x, midx);
+        int pos;
+        Vector<Object> vec=new Vector<>();
+        if(xCompare<=0){
+            vec.add(children[0].getX(x));
+            vec.add(children[1].getX(x));
+            vec.add(children[2].getX(x));
+            vec.add(children[3].getX(x));
+        }
+        else{
+            vec.add(children[4].getX(x));
+            vec.add(children[5].getX(x));
+            vec.add(children[6].getX(x));
+            vec.add(children[7].getX(x));
+        }
+        return vec;
+    }
+
+
+
+    public Vector<Object> getZ(Object z) throws DBAppException {
+        if(this.canInsert){
+            Vector<Object> vec=new Vector<>();
+            for(int i=0;i<points.size();i++){
+                if(points.get(i).getZ().equals(z))
+                    vec.add(points.get(i).getObject());
+            }
+            return vec;
+
+        }
+
+        Object midZ = getMid(topBoundary.getZ(), BottomBoundary.getZ());
+        int zCompare = compareObject(z, midZ);
+        int pos;
+        Vector<Object> vec=new Vector<>();
+        if(zCompare<=0){
+            vec.add(children[0].getZ(z));
+            vec.add(children[2].getZ(z));
+            vec.add(children[4].getZ(z));
+            vec.add(children[6].getZ(z));
+        }
+        else{
+            vec.add(children[1].getZ(z));
+            vec.add(children[3].getZ(z));
+            vec.add(children[5].getZ(z));
+            vec.add(children[7].getZ(z));
+        }
+        return vec;
+    }
+
+
+    public Vector<Object> getY(Object y) throws DBAppException {
+        if(this.canInsert){
+            Vector<Object> vec=new Vector<>();
+            for(int i=0;i<points.size();i++){
+                if(points.get(i).getY().equals(y))
+                    vec.add(points.get(i).getObject());
+            }
+            return vec;
+
+        }
+
+        Object midY = getMid(topBoundary.getY(), BottomBoundary.getY());
+        int yCompare = compareObject(y, midY);
+        int pos;
+        Vector<Object> vec=new Vector<>();
+        if(yCompare<=0){
+            vec.add(children[0].getY(y));
+            vec.add(children[1].getY(y));
+            vec.add(children[4].getY(y));
+            vec.add(children[5].getY(y));
+        }
+        else{
+            vec.add(children[2].getY(y));
+            vec.add(children[3].getY(y));
+            vec.add(children[6].getY(y));
+            vec.add(children[7].getY(y));
+        }
+        return vec;
+    }
+
+
+    public Vector<Object> getXY(Object x,Object y) throws DBAppException {
+        if(this.canInsert){
+            Vector<Object> vec=new Vector<>();
+            for(int i=0;i<points.size();i++){
+                if(points.get(i).getY().equals(y) && points.get(i).getX().equals(x))
+                    vec.add(points.get(i).getObject());
+            }
+            return vec;
+
+        }
+
+        Object midY = getMid(topBoundary.getY(), BottomBoundary.getY());
+        Object midX= getMid(topBoundary.getX(),BottomBoundary.getX());
+        int yCompare = compareObject(y, midY);
+        int xCompare = compareObject(x,midX);
+        Vector<Object> vec=new Vector<>();
+        if(xCompare<=0){
+            if(yCompare<=0){
+                vec.add(this.children[0].getXY(x,y));
+                vec.add(this.children[1].getXY(x,y));
+            }
+            else{
+                vec.add(this.children[2].getXY(x,y));
+                vec.add(this.children[3].getXY(x,y));
+            }
+        }
+        else{
+            if(yCompare<=0){
+                vec.add(this.children[4].getXY(x,y));
+                vec.add(this.children[5].getXY(x,y));
+            }
+            else{
+                vec.add(this.children[6].getXY(x,y));
+                vec.add(this.children[7].getXY(x,y));
+            }
+        }
+        return vec;
+    }
+
+
+    public Vector<Object> getXZ(Object x,Object z) throws DBAppException {
+        if(this.canInsert){
+            Vector<Object> vec=new Vector<>();
+            for(int i=0;i<points.size();i++){
+                if(points.get(i).getZ().equals(z) && points.get(i).getX().equals(x))
+                    vec.add(points.get(i).getObject());
+            }
+            return vec;
+
+        }
+
+        Object midZ = getMid(topBoundary.getZ(), BottomBoundary.getZ());
+        Object midX= getMid(topBoundary.getX(),BottomBoundary.getX());
+        int zCompare = compareObject(z, midZ);
+        int xCompare = compareObject(x,midX);
+        Vector<Object> vec=new Vector<>();
+        if(xCompare<=0){
+            if(zCompare<=0){
+                vec.add(this.children[0].getXZ(x,z));
+                vec.add(this.children[2].getXZ(x,z));
+            }
+            else{
+                vec.add(this.children[1].getXZ(x,z));
+                vec.add(this.children[3].getXZ(x,z));
+            }
+        }
+        else{
+            if(zCompare<=0){
+                vec.add(this.children[4].getXZ(x,z));
+                vec.add(this.children[6].getXZ(x,z));
+            }
+            else{
+                vec.add(this.children[5].getXZ(x,z));
+                vec.add(this.children[7].getXZ(x,z));
+            }
+        }
+        return vec;
+    }
+
+
+    public Vector<Object> getYZ(Object y,Object z) throws DBAppException {
+        if(this.canInsert){
+            Vector<Object> vec=new Vector<>();
+            for(int i=0;i<points.size();i++){
+                if(points.get(i).getZ().equals(z) && points.get(i).getY().equals(y))
+                    vec.add(points.get(i).getObject());
+            }
+            return vec;
+
+        }
+
+        Object midZ = getMid(topBoundary.getZ(), BottomBoundary.getZ());
+        Object midY= getMid(topBoundary.getY(),BottomBoundary.getY());
+        int zCompare = compareObject(z, midZ);
+        int yCompare = compareObject(y,midY);
+        Vector<Object> vec=new Vector<>();
+        if(yCompare<=0){
+            if(zCompare<=0){
+                vec.add(this.children[0].getYZ(y,z));
+                vec.add(this.children[4].getYZ(y,z));
+            }
+            else{
+                vec.add(this.children[1].getYZ(y,z));
+                vec.add(this.children[5].getYZ(y,z));
+            }
+        }
+        else{
+            if(zCompare<=0){
+                vec.add(this.children[2].getYZ(y,z));
+                vec.add(this.children[6].getYZ(y,z));
+            }
+            else{
+                vec.add(this.children[3].getYZ(y,z));
+                vec.add(this.children[7].getYZ(y,z));
+            }
+        }
+        return vec;
+    }
+
+
     public Object get(Object x,Object y,Object z) throws DBAppException {
         if(this.canInsert){
             for(int i=0;i<this.points.size();i++){
@@ -561,70 +776,44 @@ public class Octree implements Serializable {
             }
             return this.children[pos].get(x, y, z);
         }
-
     }
 
+    public static Vector<Object> flattenArray(Vector<Object> arr) {
+        Vector<Object> result = new Vector<Object>();
+        for (Object obj : arr) {
+            if (obj instanceof Vector<?>) {
+                result.addAll(flattenArray((Vector<Object>) obj));
+            } else {
+                result.add(obj);
+            }
+        }
+        return result;
+    }
 
     public static void main(String [] args) throws DBAppException {
         Octree oct = new Octree(1,1,1,7,7,7,2);
 
-        oct.insert(1,1,1,"page 33");
-        oct.insert(1,1,1,"page 33");
-        oct.insert(1,1,1,"page 33");
-//        oct.insert(1,1,1,"page 4");
-//        oct.insert(1,1,1,"page 11");
-//        oct.insert(1,1,1,"page 21");
-//        oct.insert(1,1,1,"pag 31");
-//        oct.insert(1,1,1,"page 14");
-//        oct.insert(1,1,1,"page 12");
-//        oct.insert(1,1,1,"page 22");
-//        oct.insert(1,1,1,"pag 32");
-//        oct.insert(1,1,1,"page 24");
-        oct.insert(1,1,3,"page 24");
-//
-//        oct.insert(1,1,3,"page 24");
-//
-//        oct.insert(1,1,4,"page 24");
-//
-//        oct.insert(1,1,3,"page 24");
-//
-//        oct.insert(1,1,3,"page 24");
-//
-//        oct.insert(1,1,3,"page 24");
-//
-//        oct.insert(1,1,3,"page 24");
-//
-//        oct.insert(1,1,3,"page 24");
-//
-        oct.remove(1,1,1,"page 33");
-//        oct.insert(5,1,1,"page 5");
-//        oct.insert(5,1,5,"page 6");
-//        oct.insert(5,5,1,"page 7");
-//        oct.insert(5,5,5,"page 8");
-//        oct.insert(6,1,3,"page 81");
-//        oct.insert(6,1,2,"page 9");
-//        oct.insert(6,1,1,"page 11");
-//
+        oct.insert(1,2,3,"page 10");
+        oct.insert(1,5,6,"page 20");
+        oct.insert(1,7,4,"page 33");
+        oct.insert(1,3,2,"page 44");
+        oct.insert(1,5,2,"page 55");
+        oct.insert(1,1,7,"page 66");
+        oct.insert(1,3,6,"page 77");
+        oct.insert(1,2,2,"page 88");
+        oct.insert(1,1,2,"page 99");
+        oct.insert(1,2,1,"page 100");
+        oct.insert(2,3,6,"page a7a");
+        oct.insert(3,3,6,"page kos");
+        Hashtable<Integer,String> a7a = new Hashtable<Integer, String>();
+        a7a.put(2,"lol");
+        System.out.println(a7a.get(3));
 
-
-//        System.out.println(oct.children[0].points.size());
-//        System.out.println(oct.children[1].points.size());
-//        System.out.println(oct.children[2].points.size());
-//        System.out.println(oct.children[3].points.size());
-//        System.out.println(oct.children[4].points.size());
-//        System.out.println(oct.children[5].points.size());
-//        System.out.println(oct.children[6].points.size());
-//        System.out.println(oct.children[7].points.size());
-
-//        System.out.println(oct.get(1,1,1));
-//
-//        if(oct.get(1,1,1) instanceof Vector<?>){
-//            Vector<Object> v = (Vector)oct.get(1,1,1) ;
-//            for(int i=0;i<v.size();i++){
-//                System.out.println(v.get(i));
-//            }
-//        }
-
+        Vector<Object> vec=oct.getYZ(3,6);
+        Vector<Object> newVec=flattenArray(vec);
+        for(int i=0;i<newVec.size();i++){
+            System.out.println(newVec.get(i));
+        }
 
     }
 
