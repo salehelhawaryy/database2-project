@@ -1433,6 +1433,21 @@ public class DBApp {
 		}
 	}
 
+	public static String[] deleteElement(String[] arr, int index) {
+		if (index < 0 || index >= arr.length) {
+			throw new IndexOutOfBoundsException("Index is out of bounds.");
+		}
+		String[] result = new String[arr.length - 1];
+		int resultIndex = 0;
+		for (int i = 0; i < arr.length; i++) {
+			if (i != index) {
+				result[resultIndex] = arr[i];
+				resultIndex++;
+			}
+		}
+		return result;
+	}
+
 
 
 
@@ -1463,7 +1478,73 @@ public class DBApp {
 				index = checkIndex(arrSQLTerms[i], arrSQLTerms[i+1], arrSQLTerms[i+2]);
 			}
 			if(index) {
-				i=i+3;
+				strarrOperators = deleteElement(strarrOperators, i);
+				strarrOperators = deleteElement(strarrOperators, i);
+				Octree oct = null;
+				Object x=null;
+				Object y=null;
+				Object z=null;
+				String col1="";
+				String col2="";
+				String col3="";
+				for (int j = 0; j < tableNames[i].IndexFilesName.size() ; j++) {
+					oct = deserializeIndex(tableNames[i].IndexFilesName.get(j));
+					String[] ord = tableNames[i].IndexFilesName.get(i).split("_");
+					col1 = ord[1];
+					col2 = ord[2];
+					col3 = ord[3];
+
+
+					Object input1 = arrSQLTerms[i]._objValue;
+					Object input2 = arrSQLTerms[i+1]._objValue;
+					Object input3 = arrSQLTerms[i+2]._objValue;
+
+					Hashtable<String, Object> htbl = new Hashtable<String, Object>();
+					htbl.put(arrSQLTerms[i]._strColumnName, arrSQLTerms[i]._objValue);
+					htbl.put(arrSQLTerms[i+1]._strColumnName, arrSQLTerms[i+1]._objValue);
+					htbl.put(arrSQLTerms[i+2]._strColumnName, arrSQLTerms[i+2]._objValue);
+
+					if(htbl.get(ord[1]) != null && htbl.get(ord[2]) != null && htbl.get(ord[3]) != null ) {
+						x = htbl.get(ord[1]);
+						y = htbl.get(ord[2]);
+						z = htbl.get(ord[3]);
+						break;
+					}
+				}
+				Vector<Hashtable<String, Object>> vec = new Vector<>();
+				if(arrSQLTerms[i]._strOperator.equals("=") && arrSQLTerms[i+1]._strOperator.equals("=") && arrSQLTerms[i+2]._strOperator.equals("=") ) {
+					assert oct != null;
+					Object o = oct.get(x, y, z);
+					if(o instanceof Vector<?>) {
+						Vector<?> v = (Vector) o;
+						for (int j = 0; j < v.size() ; j++) {
+							Page p = deserialize(v.get(j).toString());
+							for (int k = 0; k < p.tuples.size() ; k++) {
+								Hashtable<String, Object> tuple = p.tuples.get(k);
+								if(tuple.get(col1).equals(x) && tuple.get(col2).equals(y) && tuple.get(col3).equals(z)) {
+									vec.add(tuple);
+								}
+							}
+
+						}
+
+					}
+					else {
+						Page p = deserialize(o.toString());
+						for (int k = 0; k < p.tuples.size() ; k++) {
+							Hashtable<String, Object> tuple = p.tuples.get(k);
+							if(tuple.get(col1).equals(x) && tuple.get(col2).equals(y) && tuple.get(col3).equals(z)) {
+								vec.add(tuple);
+							}
+						}
+					}
+				}
+//				else if (arrSQLTerms[i]._strOperator.equals("=") && arrSQLTerms[i+1]._strOperator.equals("=") && arrSQLTerms[i+2]._strOperator.equals("=")) {
+//
+//				}
+				vecvec.add(vec);
+
+				i=i+2;
 				index = false;
 			}
 			else {
@@ -1651,27 +1732,37 @@ public class DBApp {
 //		arrSQLTerms[0] = new SQLTerm();
 //		arrSQLTerms[1] = new SQLTerm();
 //		arrSQLTerms[2] = new SQLTerm();
+//		//arrSQLTerms[3] = new SQLTerm();
 //		arrSQLTerms[0]._strTableName = "Student";
 //		arrSQLTerms[0]._strColumnName= "name";
 //		arrSQLTerms[0]._strOperator = "=";
-//		arrSQLTerms[0]._objValue = "Ahmed";
+//		arrSQLTerms[0]._objValue = "ahmed noor";
 //		arrSQLTerms[1]._strTableName = "Student";
 //		arrSQLTerms[1]._strColumnName= "gpa";
-//		arrSQLTerms[1]._strOperator = ">";
-//		arrSQLTerms[1]._objValue = new Double( 0.0 );
+//		arrSQLTerms[1]._strOperator = "=";
+//		arrSQLTerms[1]._objValue = new Double( 0.2 );
 //		arrSQLTerms[2]._strTableName = "Student";
 //		arrSQLTerms[2]._strColumnName= "id";
-//		arrSQLTerms[2]._strOperator = ">";
-//		arrSQLTerms[2]._objValue = new Integer( 0 );
+//		arrSQLTerms[2]._strOperator = "=";
+//		arrSQLTerms[2]._objValue = new Integer( 2343432 );
+////		arrSQLTerms[3]._strTableName = "Student";
+////		arrSQLTerms[3]._strColumnName= "tut";
+////		arrSQLTerms[3]._strOperator = ">";
+////		arrSQLTerms[3]._objValue = new Integer( 10 );
 //		String[]strarrOperators = new String[2];
 //		strarrOperators[0] = "AND";
 //		strarrOperators[1] = "AND";
-//
+////		strarrOperators[2] = "OR";
+//		long start = System.currentTimeMillis();
 //		Iterator it = dbApp.selectFromTable(arrSQLTerms, strarrOperators);
-//
+//		long end = System.currentTimeMillis();
+//		System.out.println("iterator");
 //		while(it.hasNext()) {
+//
 //			System.out.println(it.next());
 //		}
+//		System.out.println();
+//		System.out.println();
 //		Table table = dbApp.deserializeTable("src/resources/data/" + strTableName + ".class");
 //		System.out.println(table.IndexFilesName.size());
 
@@ -1713,9 +1804,9 @@ public class DBApp {
 //////
 //////
 
-
+//
 //		Hashtable htblColNameValue5 = new Hashtable( );
-//		htblColNameValue5.put("id", new Integer( 2343430 ));
+//		htblColNameValue5.put("id", new Integer( 2343425 ));
 //		htblColNameValue5.put("name", new String("fgh") );
 //		htblColNameValue5.put("gpa", new Double( 0.1 ) );
 //		htblColNameValue5.put("tut", new Integer( 1 ) );
@@ -1731,7 +1822,7 @@ public class DBApp {
 //		dbApp.insertIntoTable( strTableName , htblColNameValue );
 //
 //		Hashtable htblColNameValue1 = new Hashtable( );
-//		htblColNameValue1.put("id", new Integer( 2343435 ));
+//		htblColNameValue1.put("id", new Integer( 2343436 ));
 //		htblColNameValue1.put("name", new String("saleh" ) );
 //		htblColNameValue1.put("gpa", new Double( 0.3 ) );
 //		htblColNameValue1.put("tut", new Integer( 3 ) );
@@ -1748,8 +1839,42 @@ public class DBApp {
 //
 //		Hashtable htblColNameValue3 = new Hashtable( );
 //		htblColNameValue3.put("id", new Integer( 2343441 ));
-//		htblColNameValue3.put("name", new String("fgh" ) );
+//		htblColNameValue3.put("name", new String("danaerys" ) );
 //		htblColNameValue3.put("gpa", new Double( 0.1 ) );
+//		htblColNameValue3.put("tut", new Integer( 15 ) );
+//		htblColNameValue3.put("age", new Integer( 34 ) );
+//		dbApp.insertIntoTable( strTableName , htblColNameValue3 );
+//
+//		//Hashtable htblColNameValue3 = new Hashtable( );
+//		htblColNameValue3.clear();
+//		htblColNameValue3.put("id", new Integer( 2343430 ));
+//		htblColNameValue3.put("name", new String("jon snow" ) );
+//		htblColNameValue3.put("gpa", new Double( 0.1 ) );
+//		htblColNameValue3.put("tut", new Integer( 15 ) );
+//		htblColNameValue3.put("age", new Integer( 34 ) );
+//		dbApp.insertIntoTable( strTableName , htblColNameValue3 );
+//
+//		//Hashtable htblColNameValue3 = new Hashtable( );
+//		htblColNameValue3.clear();
+//		htblColNameValue3.put("id", new Integer( 2343431 ));
+//		htblColNameValue3.put("name", new String("alison" ) );
+//		htblColNameValue3.put("gpa", new Double( 0.1 ) );
+//		htblColNameValue3.put("tut", new Integer( 15 ) );
+//		htblColNameValue3.put("age", new Integer( 34 ) );
+//		dbApp.insertIntoTable( strTableName , htblColNameValue3 );
+//
+//		htblColNameValue3.clear();
+//		htblColNameValue3.put("id", new Integer( 2343433 ));
+//		htblColNameValue3.put("name", new String("reneira" ) );
+//		htblColNameValue3.put("gpa", new Double( 0.2 ) );
+//		htblColNameValue3.put("tut", new Integer( 15 ) );
+//		htblColNameValue3.put("age", new Integer( 34 ) );
+//		dbApp.insertIntoTable( strTableName , htblColNameValue3 );
+//
+//		htblColNameValue3.clear();
+//		htblColNameValue3.put("id", new Integer( 2343434 ));
+//		htblColNameValue3.put("name", new String("reneira" ) );
+//		htblColNameValue3.put("gpa", new Double( 0.2 ) );
 //		htblColNameValue3.put("tut", new Integer( 15 ) );
 //		htblColNameValue3.put("age", new Integer( 34 ) );
 //		dbApp.insertIntoTable( strTableName , htblColNameValue3 );
@@ -1768,15 +1893,15 @@ public class DBApp {
 //
 		Hashtable htblColNameVal = new Hashtable( );
 //		htblColNameVal.put("id", new Integer( 2343428 ));
-		htblColNameVal.put("name", new String("fgh" ) );
+		//htblColNameVal.put("name", new String("saleh" ) );
 //		//htblColNameVal.put("name", new String( "saleh" ) );
 		htblColNameVal.put("gpa", new Double( 0.1 ) );
 		//htblColNameVal.put("id", new Integer( 2343432 ) );
 //		htblColNameVal.put("tut", new Integer( 3 ) );
 //		htblColNameVal.put("age", new Integer( 17 ) );
-		long start = System.currentTimeMillis();
+		//long start = System.currentTimeMillis();
 		//dbApp.deleteFromTable( strTableName , htblColNameVal );
-		long end = System.currentTimeMillis();
+		//long end = System.currentTimeMillis();
 ////
 //////		Hashtable htblColNameValue32 = new Hashtable( );
 //////		htblColNameValue32.put("id", new Integer( 2343431 ));
@@ -1838,8 +1963,8 @@ public class DBApp {
 			}
 			System.out.println();
 		}
-		long elapsedTime = end - start;
-		System.out.println("Elapsed Time : "+ elapsedTime);
+//		long elapsedTime = end - start;
+//		System.out.println("Elapsed Time : "+ elapsedTime);
 //		System.out.println();
 
 //		SimpleDateFormat sdformat = new SimpleDateFormat("yyyy-MM-dd");

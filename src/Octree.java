@@ -608,6 +608,8 @@ public class Octree implements Serializable {
     }
 
 
+
+
     public Vector<Object> getXY(Object x,Object y) throws DBAppException {
         if(this.canInsert){
             Vector<Object> vec=new Vector<>();
@@ -791,23 +793,20 @@ public class Octree implements Serializable {
     }
 
     public static void main(String [] args) throws DBAppException {
-        Octree oct = new Octree(1,1,1,7,7,7,2);
+        Octree oct = new Octree(0.0,"a",0,100.0,"zzzzzzzzzzzzzzzzzzzzzzz",100000000,8);
 
-        oct.insert(1,2,3,"page 10");
-        oct.insert(1,5,6,"page 20");
-        oct.insert(1,7,4,"page 33");
-        oct.insert(1,3,2,"page 44");
-        oct.insert(1,5,2,"page 55");
-        oct.insert(1,1,7,"page 66");
-        oct.insert(1,3,6,"page 77");
-        oct.insert(1,2,2,"page 88");
-        oct.insert(1,1,2,"page 99");
-        oct.insert(1,2,1,"page 100");
-        oct.insert(2,3,6,"page a7a");
-        oct.insert(3,3,6,"page kos");
+        oct.insert(0.3,"Ahmed",2343428,"page 10");
+        oct.insert(0.1,"fgh",2343430,"page 20");
+        oct.insert(0.1,"alison",2343431,"page 33");
+        oct.insert(0.2,"ahmed noor",2343432,"page 44");
+        oct.insert(0.2,"reneira",2343433,"page 55");
+        oct.insert(0.2,"reneira",2343434,"page 66");
+        oct.insert(0.3,"saleh",2343436,"page 77");
+        oct.insert(0.1,"danaerys",2343441,"page 88");
+
         Hashtable<Integer,String> a7a = new Hashtable<Integer, String>();
         a7a.put(2,"lol");
-        System.out.println(a7a.get(3));
+        System.out.println(oct.get(0.2,"ahmed noor",2343432).toString());
 
         Vector<Object> vec=oct.getYZ(3,6);
         Vector<Object> newVec=flattenArray(vec);

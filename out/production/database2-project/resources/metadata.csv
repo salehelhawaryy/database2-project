@@ -1,6 +1,6 @@
 Table Name,Column Name,Column Type,Clusterkey,IndexName,IndexType,min,max
-Student,gpa,java.lang.double,false,idnamegpaIndex,Octree,0.0,100.0
+Student,gpa,java.lang.double,false,null,null,0.0,100.0
 Student,age,java.lang.Integer,false,null,null,0,100000000
-Student,name,java.lang.String,false,idnamegpaIndex,Octree,a,zzzzzzzzzzzzzzzzzzzzzzz
+Student,name,java.lang.String,false,null,null,a,zzzzzzzzzzzzzzzzzzzzzzz
 Student,tut,java.lang.Integer,false,null,null,0,100000000
-Student,id,java.lang.Integer,true,idnamegpaIndex,Octree,0,100000000
+Student,id,java.lang.Integer,true,null,null,0,100000000
