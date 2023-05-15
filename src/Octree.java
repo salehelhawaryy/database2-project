@@ -689,6 +689,283 @@ public class Octree implements Serializable {
         return vec;
     }
 
+    public Vector<Object> HelperGitX(Object current,SQLTerm sqlTerm) throws DBAppException {
+        String operator = sqlTerm._strOperator;
+        switch (operator){
+            case "=":
+                return getX(current);
+            case ">":
+                if(this.canInsert){
+                    Vector<Object> vec=new Vector<>();
+                    for(int i=0;i<points.size();i++){
+                        if(compareObject(points.get(i).getX(),current)>0)
+                            vec.add(points.get(i).getObject());
+                    }
+                    return vec;
+                }
+                Vector<Object> vec=new Vector<>();
+                for(int i=0;i<8;i++){
+                    if(compareObject(this.children[i].topBoundary.getX(),current)>0 || compareObject(this.children[i].BottomBoundary.getX(),current)>0)
+                        vec.add(this.children[i].HelperGitX(current,sqlTerm));
+                }
+                return vec;
+            case ">=":
+                if(this.canInsert){
+                    Vector<Object> vec2=new Vector<>();
+                    for(int i=0;i<points.size();i++){
+                        if(compareObject(points.get(i).getX(),current)>=0)
+                            vec2.add(points.get(i).getObject());
+                    }
+                    return vec2;
+                }
+                Vector<Object> vec2=new Vector<>();
+                for(int i=0;i<8;i++){
+                    if(compareObject(this.children[i].topBoundary.getX(),current)>=0 || compareObject(this.children[i].BottomBoundary.getX(),current)>=0)
+                        vec2.add(this.children[i].HelperGitX(current,sqlTerm));
+                }
+                return vec2;
+            case "<":
+                if(this.canInsert){
+                    Vector<Object> vec3=new Vector<>();
+                    for(int i=0;i<points.size();i++){
+                        if(compareObject(points.get(i).getX(),current)<0)
+                            vec3.add(points.get(i).getObject());
+                    }
+                    return vec3;
+                }
+                Vector<Object> vec3=new Vector<>();
+                for(int i=0;i<8;i++){
+                    if(compareObject(this.children[i].topBoundary.getX(),current)<0 || compareObject(this.children[i].BottomBoundary.getX(),current)<0)
+                        vec3.add(this.children[i].HelperGitX(current,sqlTerm));
+                }
+                return vec3;
+            case "<=":
+                if(this.canInsert){
+                    Vector<Object> vec4=new Vector<>();
+                    for(int i=0;i<points.size();i++){
+                        if(compareObject(points.get(i).getX(),current)<=0)
+                            vec4.add(points.get(i).getObject());
+                    }
+                    return vec4;
+                }
+                Vector<Object> vec4=new Vector<>();
+                for(int i=0;i<8;i++){
+                    if(compareObject(this.children[i].topBoundary.getX(),current)<=0 || compareObject(this.children[i].BottomBoundary.getX(),current)<=0)
+                        vec4.add(this.children[i].HelperGitX(current,sqlTerm));
+                }
+                return vec4;
+            case "!=":
+                if(this.canInsert){
+                    Vector<Object> vec5=new Vector<>();
+                    for(int i=0;i<points.size();i++){
+                        if(compareObject(points.get(i).getX(),current)!=0)
+                            vec5.add(points.get(i).getObject());
+                    }
+                    return vec5;
+                }
+                Vector<Object> vec5=new Vector<>();
+                for(int i=0;i<8;i++){
+                        vec5.add(this.children[i].HelperGitX(current,sqlTerm));
+                }
+                return vec5;
+        }
+        return new Vector<>();
+    }
+
+    public Vector<Object> HelperGitY(Object current,SQLTerm sqlTerm) throws DBAppException {
+        String operator = sqlTerm._strOperator;
+        switch (operator){
+            case "=":
+                return getY(current);
+            case ">":
+                if(this.canInsert){
+                    Vector<Object> vec=new Vector<>();
+                    for(int i=0;i<points.size();i++){
+                        if(compareObject(points.get(i).getY(),current)>0)
+                            vec.add(points.get(i).getObject());
+                    }
+                    return vec;
+                }
+                Vector<Object> vec=new Vector<>();
+                for(int i=0;i<8;i++){
+                    if(compareObject(this.children[i].topBoundary.getY(),current)>0 || compareObject(this.children[i].BottomBoundary.getY(),current)>0)
+                        vec.add(this.children[i].HelperGitY(current,sqlTerm));
+                }
+                return vec;
+            case ">=":
+                if(this.canInsert){
+                    Vector<Object> vec2=new Vector<>();
+                    for(int i=0;i<points.size();i++){
+                        if(compareObject(points.get(i).getY(),current)>=0)
+                            vec2.add(points.get(i).getObject());
+                    }
+                    return vec2;
+                }
+                Vector<Object> vec2=new Vector<>();
+                for(int i=0;i<8;i++){
+                    if(compareObject(this.children[i].topBoundary.getY(),current)>=0 || compareObject(this.children[i].BottomBoundary.getY(),current)>=0)
+                        vec2.add(this.children[i].HelperGitY(current,sqlTerm));
+                }
+                return vec2;
+            case "<":
+                if(this.canInsert){
+                    Vector<Object> vec3=new Vector<>();
+                    for(int i=0;i<points.size();i++){
+                        if(compareObject(points.get(i).getY(),current)<0)
+                            vec3.add(points.get(i).getObject());
+                    }
+                    return vec3;
+                }
+                Vector<Object> vec3=new Vector<>();
+                for(int i=0;i<8;i++){
+                    if(compareObject(this.children[i].topBoundary.getY(),current)<0 || compareObject(this.children[i].BottomBoundary.getY(),current)<0)
+                        vec3.add(this.children[i].HelperGitY(current,sqlTerm));
+                }
+                return vec3;
+            case "<=":
+                if(this.canInsert){
+                    Vector<Object> vec4=new Vector<>();
+                    for(int i=0;i<points.size();i++){
+                        if(compareObject(points.get(i).getY(),current)<=0)
+                            vec4.add(points.get(i).getObject());
+                    }
+                    return vec4;
+                }
+                Vector<Object> vec4=new Vector<>();
+                for(int i=0;i<8;i++){
+                    if(compareObject(this.children[i].topBoundary.getY(),current)<=0 || compareObject(this.children[i].BottomBoundary.getY(),current)<=0)
+                        vec4.add(this.children[i].HelperGitY(current,sqlTerm));
+                }
+                return vec4;
+            case "!=":
+                if(this.canInsert){
+                    Vector<Object> vec5=new Vector<>();
+                    for(int i=0;i<points.size();i++){
+                        if(compareObject(points.get(i).getY(),current)!=0)
+                            vec5.add(points.get(i).getObject());
+                    }
+                    return vec5;
+                }
+                Vector<Object> vec5=new Vector<>();
+                for(int i=0;i<8;i++){
+                    vec5.add(this.children[i].HelperGitY(current,sqlTerm));
+                }
+                return vec5;
+        }
+        return new Vector<>();
+    }
+
+    public Vector<Object> HelperGitZ(Object current,SQLTerm sqlTerm) throws DBAppException {
+        String operator = sqlTerm._strOperator;
+        switch (operator){
+            case "=":
+                return getZ(current);
+            case ">":
+                if(this.canInsert){
+                    Vector<Object> vec=new Vector<>();
+                    for(int i=0;i<points.size();i++){
+                        if(compareObject(points.get(i).getZ(),current)>0)
+                            vec.add(points.get(i).getObject());
+                    }
+                    return vec;
+                }
+                Vector<Object> vec=new Vector<>();
+                for(int i=0;i<8;i++){
+                    if(compareObject(this.children[i].topBoundary.getZ(),current)>0 || compareObject(this.children[i].BottomBoundary.getZ(),current)>0)
+                        vec.add(this.children[i].HelperGitZ(current,sqlTerm));
+                }
+                return vec;
+            case ">=":
+                if(this.canInsert){
+                    Vector<Object> vec2=new Vector<>();
+                    for(int i=0;i<points.size();i++){
+                        if(compareObject(points.get(i).getZ(),current)>=0)
+                            vec2.add(points.get(i).getObject());
+                    }
+                    return vec2;
+                }
+                Vector<Object> vec2=new Vector<>();
+                for(int i=0;i<8;i++){
+                    if(compareObject(this.children[i].topBoundary.getZ(),current)>=0 || compareObject(this.children[i].BottomBoundary.getZ(),current)>=0)
+                        vec2.add(this.children[i].HelperGitZ(current,sqlTerm));
+                }
+                return vec2;
+            case "<":
+                if(this.canInsert){
+                    Vector<Object> vec3=new Vector<>();
+                    for(int i=0;i<points.size();i++){
+                        if(compareObject(points.get(i).getZ(),current)<0)
+                            vec3.add(points.get(i).getObject());
+                    }
+                    return vec3;
+                }
+                Vector<Object> vec3=new Vector<>();
+                for(int i=0;i<8;i++){
+                    if(compareObject(this.children[i].topBoundary.getZ(),current)<0 || compareObject(this.children[i].BottomBoundary.getZ(),current)<0)
+                        vec3.add(this.children[i].HelperGitZ(current,sqlTerm));
+                }
+                return vec3;
+            case "<=":
+                if(this.canInsert){
+                    Vector<Object> vec4=new Vector<>();
+                    for(int i=0;i<points.size();i++){
+                        if(compareObject(points.get(i).getZ(),current)<=0)
+                            vec4.add(points.get(i).getObject());
+                    }
+                    return vec4;
+                }
+                Vector<Object> vec4=new Vector<>();
+                for(int i=0;i<8;i++){
+                    if(compareObject(this.children[i].topBoundary.getZ(),current)<=0 || compareObject(this.children[i].BottomBoundary.getZ(),current)<=0)
+                        vec4.add(this.children[i].HelperGitZ(current,sqlTerm));
+                }
+                return vec4;
+            case "!=":
+                if(this.canInsert){
+                    Vector<Object> vec5=new Vector<>();
+                    for(int i=0;i<points.size();i++){
+                        if(compareObject(points.get(i).getZ(),current)!=0)
+                            vec5.add(points.get(i).getObject());
+                    }
+                    return vec5;
+                }
+                Vector<Object> vec5=new Vector<>();
+                for(int i=0;i<8;i++){
+                    vec5.add(this.children[i].HelperGitZ(current,sqlTerm));
+                }
+                return vec5;
+        }
+        return new Vector<>();
+    }
+
+
+
+
+    public Vector<Object> RangeOct(Object x, Object y, Object z, SQLTerm[] sqlTerms) throws DBAppException {
+        Vector<Object> xVec1 = (HelperGitX(x,sqlTerms[0]));
+        Vector<Object> yVec2 = (HelperGitY(y,sqlTerms[1]));
+        Vector<Object> zVec3 = (HelperGitZ(z,sqlTerms[2]));
+
+        Vector<Object> xVec = flattenArray(HelperGitX(x,sqlTerms[0]));
+        Vector<Object> yVec = flattenArray(HelperGitY(y,sqlTerms[1]));
+        Vector<Object> zVec = flattenArray(HelperGitZ(z,sqlTerms[2]));
+
+
+
+
+        Vector<Object> res=new Vector<>();
+        for(int i=0;i<xVec.size();i++){
+            if(yVec.contains(xVec.get(i)))
+                res.add(xVec.get(i));
+        }
+        for(int i=0;i<res.size();i++){
+            if(!zVec.contains(res.get(i)))
+                res.remove(res.get(i));
+        }
+
+        return res;
+    }
+
 
     public Vector<Object> getYZ(Object y,Object z) throws DBAppException {
         if(this.canInsert){
@@ -780,6 +1057,10 @@ public class Octree implements Serializable {
         }
     }
 
+
+
+
+
     public static Vector<Object> flattenArray(Vector<Object> arr) {
         Vector<Object> result = new Vector<Object>();
         for (Object obj : arr) {
@@ -793,26 +1074,35 @@ public class Octree implements Serializable {
     }
 
     public static void main(String [] args) throws DBAppException {
-        Octree oct = new Octree(0.0,"a",0,100.0,"zzzzzzzzzzzzzzzzzzzzzzz",100000000,8);
+        Octree oct = new Octree(0,0,0,100,11,100000000,1);
 
-        oct.insert(0.3,"Ahmed",2343428,"page 10");
-        oct.insert(0.1,"fgh",2343430,"page 20");
-        oct.insert(0.1,"alison",2343431,"page 33");
-        oct.insert(0.2,"ahmed noor",2343432,"page 44");
-        oct.insert(0.2,"reneira",2343433,"page 55");
-        oct.insert(0.2,"reneira",2343434,"page 66");
-        oct.insert(0.3,"saleh",2343436,"page 77");
-        oct.insert(0.1,"danaerys",2343441,"page 88");
+        oct.insert(8,1,2343428,"page 10");
+        oct.insert(7,2,2343430,"page 20");
+        oct.insert(6,3,2343431,"page 33");
+        oct.insert(5,4,2343432,"page 44");
+        oct.insert(4,5,2343433,"page 55");
+        oct.insert(3,6,2343434,"page 66");
+        oct.insert(2,7,2343436,"page 77");
+        oct.insert(1,8,2343441,"page 88");
 
-        Hashtable<Integer,String> a7a = new Hashtable<Integer, String>();
-        a7a.put(2,"lol");
-        System.out.println(oct.get(0.2,"ahmed noor",2343432).toString());
-
-        Vector<Object> vec=oct.getYZ(3,6);
-        Vector<Object> newVec=flattenArray(vec);
-        for(int i=0;i<newVec.size();i++){
-            System.out.println(newVec.get(i));
+        SQLTerm[] sqlTerms=new SQLTerm[3];
+        sqlTerms[0]=new SQLTerm("a7a","a7a",">=",new String("9393"));
+        sqlTerms[1]=new SQLTerm("a7a","a7a","<=",new String(""));
+        sqlTerms[2]=new SQLTerm("a7a","a7a","!=",new String(""));
+        Vector<Object> vec=oct.RangeOct(4,5,2343428,sqlTerms);
+        for(int i=0;i<vec.size();i++){
+            System.out.println(vec.get(i));
         }
+
+//        Hashtable<Integer,String> a7a = new Hashtable<Integer, String>();
+//        a7a.put(2,"lol");
+//        System.out.println(oct.get(0.2,"ahmed noor",2343432).toString());
+//
+//        Vector<Object> vec=oct.getYZ(3,6);
+//        Vector<Object> newVec=flattenArray(vec);
+//        for(int i=0;i<newVec.size();i++){
+//            System.out.println(newVec.get(i));
+//        }
 
     }
 
