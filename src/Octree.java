@@ -146,7 +146,9 @@ public class Octree implements Serializable {
 
     public int compareObject(Object o1, Object o2) {
         if(o1 instanceof String) {
-            return ((String) o1).compareTo(((String)o2));
+            String o11 = (String) o1;
+            String o22 = (String) o2;
+            return (o11.toLowerCase().compareTo(o22.toLowerCase()));
         } else if(o1 instanceof Double) {
             return ((Double) o1).compareTo(((Double)o2));
         } else if(o1 instanceof Integer) {
@@ -942,10 +944,6 @@ public class Octree implements Serializable {
 
 
     public Vector<Object> RangeOct(Object x, Object y, Object z, SQLTerm[] sqlTerms) throws DBAppException {
-        Vector<Object> xVec1 = (HelperGitX(x,sqlTerms[0]));
-        Vector<Object> yVec2 = (HelperGitY(y,sqlTerms[1]));
-        Vector<Object> zVec3 = (HelperGitZ(z,sqlTerms[2]));
-
         Vector<Object> xVec = flattenArray(HelperGitX(x,sqlTerms[0]));
         Vector<Object> yVec = flattenArray(HelperGitY(y,sqlTerms[1]));
         Vector<Object> zVec = flattenArray(HelperGitZ(z,sqlTerms[2]));
