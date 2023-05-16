@@ -146,8 +146,8 @@ public class Octree implements Serializable {
 
     public int compareObject(Object o1, Object o2) {
         if(o1 instanceof String) {
-            String o11 = (String) o1;
-            String o22 = (String) o2;
+            String o11 = o1.toString();
+            String o22 = o2.toString();
             return (o11.toLowerCase().compareTo(o22.toLowerCase()));
         } else if(o1 instanceof Double) {
             return ((Double) o1).compareTo(((Double)o2));
@@ -1070,40 +1070,4 @@ public class Octree implements Serializable {
         }
         return result;
     }
-
-    public static void main(String [] args) throws DBAppException {
-        Octree oct = new Octree(0,0,0,100,11,100000000,1);
-
-        oct.insert(8,1,2343428,"page 10");
-        oct.insert(7,2,2343430,"page 20");
-        oct.insert(6,3,2343431,"page 33");
-        oct.insert(5,4,2343432,"page 44");
-        oct.insert(4,5,2343433,"page 55");
-        oct.insert(3,6,2343434,"page 66");
-        oct.insert(2,7,2343436,"page 77");
-        oct.insert(1,8,2343441,"page 88");
-
-        SQLTerm[] sqlTerms=new SQLTerm[3];
-        sqlTerms[0]=new SQLTerm("a7a","a7a",">=",new String("9393"));
-        sqlTerms[1]=new SQLTerm("a7a","a7a","<=",new String(""));
-        sqlTerms[2]=new SQLTerm("a7a","a7a","!=",new String(""));
-        Vector<Object> vec=oct.RangeOct(4,5,2343428,sqlTerms);
-        for(int i=0;i<vec.size();i++){
-            System.out.println(vec.get(i));
-        }
-
-//        Hashtable<Integer,String> a7a = new Hashtable<Integer, String>();
-//        a7a.put(2,"lol");
-//        System.out.println(oct.get(0.2,"ahmed noor",2343432).toString());
-//
-//        Vector<Object> vec=oct.getYZ(3,6);
-//        Vector<Object> newVec=flattenArray(vec);
-//        for(int i=0;i<newVec.size();i++){
-//            System.out.println(newVec.get(i));
-//        }
-
-    }
-
-
-
 }
